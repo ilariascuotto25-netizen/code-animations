@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hybrid Bot Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #33405e;
+    --line: #afd790;
+    --packet: #e9ffd6;
+    --violet: #6361f0;
+    --violet-bg: #eeeeff;
+    --violet-border: #bbbbf5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: transparent; overflow: hidden; }
+  body {
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-variation-settings: "opsz" 14;
+    -webkit-font-smoothing: antialiased;
+    display: grid;
+    place-items: center;
+  }
+
+  /* The stage is authored at the Figma frame's exact size and scaled to fit. */
+  #viewport { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+  #stage {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 773px; height: 570px;
+    transform-origin: 0 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    isolation: isolate;
+  }
+  .bg {
+    position: absolute; left: -50px; top: 0; width: 1440px; height: 656px; overflow: hidden;
+  }
+  .bg img { position: absolute; left: 0; top: -23.63%; width: 100%; height: 137.2%; display: block; }
+
+  svg.wires { position: absolute; inset: 0; width: 773px; height: 570px; overflow: visible; }
+  .wire { fill: none; stroke: var(--line); stroke-width: 3; stroke-linejoin: miter; }
+  .head { fill: var(--line); }
+  .packet { fill: var(--packet); }
+  .packet-glow { fill: var(--line); opacity: .55; filter: url(#blur); }
+
+  /* Cards */
+  .card {
+    position: absolute; width: 220px;
+    filter: drop-shadow(0 4px 2px rgba(0,0,0,.04)) drop-shadow(0 8px 4px rgba(0,0,0,.06)) drop-shadow(0 16px 8px rgba(0,0,0,.08));
+    will-change: transform, opacity;
+  }
+  .card-head {
+    background: #fff; border-radius: 3px 3px 0 0;
+    padding: 8px 16px 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card.solo .card-head { border-radius: 3px; padding: 8px 16px; }
+  .title-wrap { display: flex; align-items: center; gap: 10px; }
+  .icon { width: 16px; height: 16px; display: block; flex: none; }
+  .titles { color: var(--ink); white-space: nowrap; }
+  .titles b { display: block; font-weight: 700; font-size: 14px; line-height: 22px; margin-bottom: -4px; }
+  .titles span { display: block; font-size: 12px; line-height: 20px; }
+  .card-body {
+    background: #fff; border: 1px solid #fff; border-radius: 0 0 3px 3px;
+    padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .row {
+    position: relative; height: 30px; padding: 0 10px; display: flex; align-items: center;
+    border: 1px solid; border-radius: 3px; overflow: hidden;
+    font-weight: 500; font-size: 11px; line-height: 28px;
+  }
+  .row.violet { background: var(--violet-bg); border-color: var(--violet-border); color: var(--violet); }
+  .row.ok     { background: #f0fbd2; border-color: #afd790; color: #3b730e; }
+  .row.err    { background: #fddecd; border-color: #fe9899; color: #9f0721; }
+  .row .label { position: relative; z-index: 1; }
+  /* Active highlight + shimmer layers, driven by the timeline */
+  .row .hl { position: absolute; inset: -1px; border-radius: 3px; opacity: 0; }
+  .row.violet .hl { background: #dedcff; box-shadow: inset 0 0 0 1px var(--violet); }
+  .row.ok .hl     { background: #e3f7b8; box-shadow: inset 0 0 0 1px #7cb956; }
+  .row .shine {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 60%;
+    background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.85) 50%, transparent 100%);
+    transform: translateX(-120%); opacity: .9;
+  }
+
+  /* Ports */
+  .port { position: absolute; width: 20px; height: 20px; will-change: transform; }
+  .port img.dot { position: absolute; inset: 0; width: 20px; height: 20px; }
+  .port img.plus { position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; }
+  .port .ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid var(--line); opacity: 0;
+  }
+  .port.red .ring { border-color: #e1494c; }
+
+  .sparkle { transform-origin: 50% 50%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .row .shine { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage" aria-label="Animated diagram: an AI agent qualifies a lead, then routes the chat to an n8n workflow, a human follow-up, or back to the linear flow." role="img">
+    <div class="bg"><img src="assets/bg.png" alt=""></div>
+
+    <svg class="wires" viewBox="0 0 773 570" aria-hidden="true">
+      <defs>
+        <filter id="blur" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <!-- Geometry mirrors the Figma connector vectors (3px stroke, 15×17 arrowheads). -->
+      <path id="w-in"    class="wire" d="M-91 317 H-23.5 V261 H57.5"/>
+      <path id="w-n8n"   class="wire" d="M293 229 H360.5 V173 H441.5"/>
+      <path id="w-human" class="wire" d="M293 261 H360.5 V301 H441.5"/>
+      <path id="w-back"  class="wire" d="M293 296 H335.5 V422 H441.5"/>
+      <polygon id="h-in"    class="head" points="56,252.34 71,261 56,269.66"/>
+      <polygon id="h-n8n"   class="head" points="440,164.34 455,173 440,181.66"/>
+      <polygon id="h-human" class="head" points="440,292.34 455,301 440,309.66"/>
+      <polygon id="h-back"  class="head" points="440,413.34 455,422 440,430.66"/>
+      <g id="packets"></g>
+    </svg>
+
+    <!-- AI agent -->
+    <div class="card" id="c-ai" style="left:71px; top:155px">
+      <div class="card-head">
+        <div class="title-wrap">
+          <img class="icon sparkle" src="assets/sparkles.svg" alt="">
+          <div class="titles"><b>AI agent</b><span>Lead qualification</span></div>
+        </div>
+        <img class="icon" src="assets/ellipsis.svg" alt="">
+      </div>
+      <div class="card-body">
+        <div class="row violet" id="r-min"><div class="hl"></div><div class="shine"></div><span class="label">minimum_info_captured</span></div>
+        <div class="row violet" id="r-human"><div class="hl"></div><div class="shine"></div><span class="label">transfer_to_human</span></div>
+        <div class="row violet" id="r-back"><div class="hl"></div><div class="shine"></div><span class="label">back_to_linear</span></div>
+      </div>
+    </div>
+    <div class="port" id="p-min"   style="left:273px; top:219px"><div class="ring"></div><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+    <div class="port" id="p-human" style="left:273px; top:252px"><div class="ring"></div><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+    <div class="port" id="p-back"  style="left:273px; top:286px"><div class="ring"></div><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+
+    <!-- n8n -->
+    <div class="card" id="c-n8n" style="left:456px; top:90px">
+      <div class="card-head">
+        <div class="title-wrap">
+          <img class="icon" src="assets/n8n.svg" alt="">
+          <div class="titles"><b>n8n</b><span>Send data to workflow</span></div>
+        </div>
+        <img class="icon" src="assets/ellipsis.svg" alt="">
+      </div>
+      <div class="card-body">
+        <div class="row ok" id="r-ok"><div class="hl"></div><div class="shine"></div><span class="label">Success</span></div>
+        <div class="row err" id="r-err"><span class="label">Error</span></div>
+      </div>
+    </div>
+    <div class="port" id="p-ok"  style="left:658px; top:153px"><div class="ring"></div><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+    <div class="port red" id="p-err" style="left:658px; top:186px"><div class="ring"></div><img class="dot" src="assets/port-red.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+
+    <!-- Human follow-up -->
+    <div class="card solo" id="c-hum" style="left:455px; top:273px">
+      <div class="card-head">
+        <div class="title-wrap">
+          <img class="icon" src="assets/woman-laptop.svg" alt="">
+          <div class="titles"><b>Human follow-up</b><span>Send chat to inbox</span></div>
+        </div>
+        <img class="icon" src="assets/ellipsis.svg" alt="">
+      </div>
+    </div>
+    <div class="port" id="p-hum" style="left:665px; top:290px"><div class="ring"></div><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(() => {
+  const W = 773, H = 570;
+  const stage = document.getElementById('stage');
+  const params = new URLSearchParams(location.search);
+
+  // ---------- Fit: scale the 773×570 stage to whatever box it's embedded in ----------
+  function fit() {
+    const vw = innerWidth, vh = innerHeight;
+    const s = Math.min(vw / W, vh / H);
+    stage.style.transform = `translate(${-W * s / 2}px, ${-H * s / 2}px) scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
+
+  // ---------- Easing vocabulary ----------
+  const OUT = 'expo.out';          // entrances
+  const SNAP = 'back.out(2.2)';    // ports popping in
+  const DRAW = 'power2.inOut';     // wires
+  const IN = 'power2.in';          // exits
+
+  // ---------- Wires: prep for stroke drawing ----------
+  const wires = {};
+  ['in', 'n8n', 'human', 'back'].forEach((k) => {
+    const p = $('#w-' + k), L = p.getTotalLength();
+    wires[k] = { path: p, len: L, head: $('#h-' + k) };
+    gsap.set(p, { strokeDasharray: L, strokeDashoffset: L });
+    gsap.set(wires[k].head, { opacity: 0, scale: 0.4, transformOrigin: '100% 50%' });
+  });
+
+  // ---------- Packets: glowing dots that travel along a wire ----------
+  const NS = 'http://www.w3.org/2000/svg';
+  function makePacket() {
+    const g = document.createElementNS(NS, 'g');
+    const glow = document.createElementNS(NS, 'circle'); glow.setAttribute('r', 7); glow.setAttribute('class', 'packet-glow');
+    const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', 3.2); dot.setAttribute('class', 'packet');
+    g.append(glow, dot); g.style.opacity = 0;
+    $('#packets').append(g);
+    return g;
+  }
+  // Returns a tween moving a fresh packet along wire k (from..to are 0–1 of length)
+  function travel(k, dur = 0.9, from = 0, to = 1) {
+    const g = makePacket(), w = wires[k], o = { t: from };
+    const place = () => {
+      const pt = w.path.getPointAtLength(o.t * w.len);
+      g.setAttribute('transform', `translate(${pt.x} ${pt.y})`);
+    };
+    place();
+    const tl = gsap.timeline();
+    tl.to(g, { opacity: 1, duration: 0.15 }, 0)
+      .to(o, { t: to, duration: dur, ease: 'power1.inOut', onUpdate: place }, 0)
+      .to(g, { opacity: 0, duration: 0.2 }, dur - 0.12);
+    return tl;
+  }
+
+  // ---------- Building blocks ----------
+  const drawWire = (k, dur = 0.7) => gsap.timeline()
+    .to(wires[k].path, { strokeDashoffset: 0, duration: dur, ease: DRAW }, 0)
+    .to(wires[k].head, { opacity: 1, scale: 1, duration: 0.35, ease: SNAP }, dur - 0.12);
+
+  const cardIn = (sel) => {
+    const c = $(sel);
+    const rows = c.querySelectorAll('.row');
+    const tl = gsap.timeline();
+    tl.fromTo(c, { opacity: 0, y: 14, scale: 0.96 },
+                 { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: OUT }, 0);
+    if (rows.length) tl.fromTo(rows, { opacity: 0, y: 6 },
+                 { opacity: 1, y: 0, duration: 0.5, ease: OUT, stagger: 0.07 }, 0.12);
+    return tl;
+  };
+
+  const portsIn = (sels) => gsap.fromTo(sels.map((s) => $(s)), { scale: 0 },
+    { scale: 1, duration: 0.45, ease: SNAP, stagger: 0.07 });
+
+  const pulse = (sel) => gsap.timeline()
+    .fromTo($(sel + ' .ring'), { scale: 1, opacity: 0.9 }, { scale: 2.2, opacity: 0, duration: 0.7, ease: 'power2.out' }, 0)
+    .fromTo($(sel), { scale: 1 }, { scale: 1.18, duration: 0.14, ease: 'power2.out', yoyo: true, repeat: 1 }, 0);
+
+  const highlight = (sel, on = true) => gsap.to($(sel + ' .hl'), { opacity: on ? 1 : 0, duration: on ? 0.25 : 0.5, ease: 'power2.out' });
+
+  const shine = (sels, stagger = 0.12) => gsap.fromTo(sels.map((s) => $(s + ' .shine')),
+    { xPercent: -120 }, { xPercent: 260, duration: 0.85, ease: 'power2.inOut', stagger });
+
+  // ---------- Initial state ----------
+  function reset() {
+    gsap.set(['#c-ai', '#c-n8n', '#c-hum'], { opacity: 0 });
+    gsap.set($$('.port'), { scale: 0 });
+    gsap.set($$('.row .hl'), { opacity: 0 });
+    gsap.set($$('.row .shine'), { xPercent: -120 });
+    gsap.set('.sparkle', { rotate: 0, scale: 1 });
+    Object.values(wires).forEach((w) => {
+      gsap.set(w.path, { strokeDashoffset: w.len, opacity: 1 });
+      gsap.set(w.head, { opacity: 0, scale: 0.4 });
+    });
+  }
+
+  // ---------- The choreography (≈10 s, seamless loop) ----------
+  reset();
+  const tl = gsap.timeline({ paused: true });
+  tl.set(Object.values(wires).map((w) => w.path), { opacity: 1 }, 0);
+
+  // 1 · A conversation arrives
+  tl.add(drawWire('in', 0.8), 0.3)
+    .add(travel('in', 0.8, 0.35, 1), 0.55)
+  // 2 · The AI agent block lands, its outcomes stack in
+    .add(cardIn('#c-ai'), 0.85)
+    .add(portsIn(['#p-min', '#p-human', '#p-back']), 1.25)
+  // 3 · Thinking: sparkle twinkle + a shimmer pass over the outcomes
+    .to('.sparkle', { rotate: 180, scale: 1.25, duration: 0.6, ease: 'power2.inOut', yoyo: true, repeat: 1 }, 1.7)
+    .add(shine(['#r-min', '#r-human', '#r-back']), 1.8)
+
+  // 4 · Outcome A — info captured → n8n workflow
+    .add(highlight('#r-min'), 2.85)
+    .add(pulse('#p-min'), 2.9)
+    .add(drawWire('n8n', 0.75), 3.0)
+    .add(travel('n8n', 0.75), 3.05)
+    .add(cardIn('#c-n8n'), 3.55)
+    .add(portsIn(['#p-ok', '#p-err']), 3.9)
+    .add(highlight('#r-ok'), 4.15)
+    .add(shine(['#r-ok'], 0), 4.15)
+    .add(pulse('#p-ok'), 4.3)
+    .add(highlight('#r-min', false), 4.3)
+
+  // 5 · Outcome B — transfer to human
+    .add(highlight('#r-human'), 4.55)
+    .add(pulse('#p-human'), 4.6)
+    .add(drawWire('human', 0.7), 4.7)
+    .add(travel('human', 0.7), 4.75)
+    .add(cardIn('#c-hum'), 5.2)
+    .add(portsIn(['#p-hum']), 5.55)
+    .add(highlight('#r-human', false), 5.9)
+
+  // 6 · Outcome C — back to the linear flow
+    .add(highlight('#r-back'), 6.0)
+    .add(pulse('#p-back'), 6.05)
+    .add(drawWire('back', 0.8), 6.15)
+    .add(travel('back', 0.8), 6.2)
+    .add(highlight('#r-back', false), 7.1)
+
+  // 7 · Live system: traffic flows through every branch
+    .add(travel('in', 0.7, 0.35, 1), 7.0)
+    .add(travel('n8n', 0.8), 7.55)
+    .add(travel('in', 0.7, 0.35, 1), 7.5)
+    .add(travel('human', 0.8), 8.05)
+    .add(travel('back', 0.9), 8.25)
+
+  // 8 · Tidy exit so the last frame matches the first
+  const exitAt = 9.35;
+  tl.to(['#c-hum', '#c-n8n', '#c-ai'], { opacity: 0, y: -8, scale: 0.98, duration: 0.45, ease: IN, stagger: 0.06 }, exitAt)
+    .to($$('.port'), { scale: 0, duration: 0.3, ease: IN, stagger: 0.02 }, exitAt)
+    .to(Object.values(wires).map((w) => w.path), { opacity: 0, duration: 0.45, ease: IN }, exitAt)
+    .to(Object.values(wires).map((w) => w.head), { opacity: 0, duration: 0.3, ease: IN }, exitAt)
+    .to({}, { duration: 0.35 });   // breath of empty canvas before the loop
+
+  // ---------- Playback ----------
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced || params.has('still')) {
+    tl.seek(8.9).pause();          // fully built frame, no motion
+  } else {
+    tl.repeat(-1).play(0);
+    // Don't burn CPU while scrolled out of view on the portfolio page
+    if ('IntersectionObserver' in window && window.top !== window) {
+      new IntersectionObserver(([e]) => e.isIntersecting ? tl.play() : tl.pause()).observe(stage);
+    }
+    document.addEventListener('visibilitychange', () => document.hidden ? tl.pause() : tl.play());
+  }
+
+  // ?t=4.2 freezes at a moment (handy for review / poster frames)
+  if (params.has('t')) tl.pause().seek(parseFloat(params.get('t')));
+  window.__tl = tl;
+})();
+</script>
+</body>
+</html>
