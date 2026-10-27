@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figma Make Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,500;9..40,700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* Built from the portfolio-hover-flick template, recomposed in the promo-sticker style */
+  :root {
+    --purple: #6361f0;
+    --ink: #1d1b3a;
+    --sticker-shadow: 0 1px 2px rgba(29,27,58,.06), 0 14px 34px -10px rgba(52,40,140,.28);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: transparent; overflow: hidden; }
+  body { font-family: "DM Sans", system-ui, sans-serif; font-variation-settings: "opsz" 14; -webkit-font-smoothing: antialiased; cursor: default; }
+  #stage { position: absolute; left: 50%; top: 50%; width: 979px; height: 669px; transform-origin: 0 0; }
+  .layer { position: absolute; inset: 0; will-change: transform; pointer-events: none; }
+  .card { position: absolute; will-change: transform; }
+  .float { width: 100%; height: 100%; will-change: transform; }
+
+  /* Soft glow behind the group */
+  .glow {
+    position: absolute; left: 126px; top: 106px; width: 700px; height: 490px; border-radius: 50%;
+    background:
+      radial-gradient(closest-side at 42% 50%, rgba(160,150,255,.55), rgba(160,150,255,0) 100%),
+      radial-gradient(closest-side at 70% 45%, rgba(120,190,255,.35), rgba(120,190,255,0) 100%);
+    filter: blur(24px);
+  }
+
+  /* Sticker surface: white card, hairline, lifted shadow */
+  .sticker {
+    width: 100%; height: 100%; background: #fff; border-radius: 16px; overflow: hidden;
+    border: 1px solid rgba(99,97,240,.14); box-shadow: var(--sticker-shadow);
+  }
+  .sticker img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /* Positions (stage px). Rotations at rest give the fanned promo look. */
+  #spec     { left: 78px;   top: 144px; width: 340px; height: 140px; }
+  #chat     { left: 584px;  top: 412px; width: 300px; height: 119px; }
+  #hero     { left: 196px;  top: 266px; width: 560px; height: 166px; }
+  #hero .sticker { border-radius: 22px; box-shadow: 0 2px 4px rgba(29,27,58,.06), 0 10px 24px -12px rgba(29,27,58,.18); }
+  /* The hero's purple shadow lives on its own layer behind every card, so it never paints over the images */
+  #hero-shadow { left: 216px; top: 300px; width: 520px; height: 150px; }
+  #hero-shadow .blob { width: 100%; height: 100%; border-radius: 40px; background: rgba(82,64,200,.42); filter: blur(28px); }
+  #selected { left: 610px;  top: 192px; width: 320px; height: 79px; }
+  #selected .sticker { border-radius: 12px; }
+  #toolbar  { left: 626px;  top: 134px; width: 240px; height: 39px; }
+  #toolbar .sticker { border-radius: 999px; }
+  #tooltip  { position: absolute; left: 137px; top: 41px; width: 40px; height: 25px; border-radius: 5px; overflow: hidden; box-shadow: 0 6px 14px -4px rgba(0,0,0,.35); }
+  #tooltip img { width: 100%; height: 100%; display: block; }
+  #cursor   { position: absolute; left: 175px; top: 29px; width: 30px; height: 30px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+  #logo     { left: 70px;   top: 334px; width: 150px; height: 100px; }
+  #logo .sticker { border-radius: 22px; }
+  #ai {
+    left: 248px;  top: 456px; height: 40px; width: 92px;
+  }
+  .pill {
+    width: 100%; height: 100%; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(135deg, #7c5cff, #6361f0 55%, #4f46e5);
+    color: #fff; font-weight: 700; font-size: 18px; letter-spacing: .01em;
+    box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 14px 30px -8px rgba(79,70,229,.6);
+  }
+
+  /* ============ Live-HTML recreations of the Figma Make UI (sharp at any size) ============ */
+  .ui { position: relative; width: 100%; height: 100%; font-family: "Inter", system-ui, sans-serif; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
+  .ui svg { display: block; }
+
+  /* Prompt (hero) */
+  .prompt { background: #fff; overflow: hidden; }
+  .prompt::before {           /* lavender wash, bottom-right */
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(70% 120% at 100% 100%, rgba(205,200,255,.95) 0%, rgba(225,222,255,.55) 35%, rgba(255,255,255,0) 70%);
+  }
+  .prompt::after {            /* faint grid inside the wash */
+    content: ""; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,.75) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.75) 1px, transparent 1px);
+    background-size: 13px 13px;
+    -webkit-mask-image: radial-gradient(60% 110% at 100% 100%, #000 0%, transparent 70%);
+            mask-image: radial-gradient(60% 110% at 100% 100%, #000 0%, transparent 70%);
+  }
+  .prompt h3 { position: absolute; z-index: 1; left: 0; right: 0; top: 18px; text-align: center; font-weight: 600; font-size: 17.5px; letter-spacing: -.01em; color: #1b1b1b; }
+  .prompt .box {
+    position: absolute; z-index: 1; left: 20px; top: 59px; width: 521px; height: 77px;
+    background: #fff; border: 1px solid #ededed; border-radius: 19px;
+    /* matched to the original screenshot: soft all-round shadow, darkest just under the bottom edge, ~9px falloff */
+    box-shadow: 0 0 1px rgba(0,0,0,.05), 0 1px 7px rgba(0,0,0,.07);
+  }
+  .prompt .ph { position: absolute; left: 12.5px; top: 14px; font-size: 10px; color: #b4b4b4; }
+  .prompt .btn {
+    position: absolute; top: 40px; width: 24.5px; height: 24.5px; border-radius: 50%;
+    border: 1px solid #e3e3e3; background: #fff; display: grid; place-items: center;
+  }
+  .prompt .btn.mic { border-color: #ebebff; background: #ebebff; }
+  .prompt .btn.send { border-color: #d6d6d6; background: #d6d6d6; }
+  .prompt .sel { position: absolute; top: 46.5px; font-size: 8px; font-weight: 500; color: #222; display: flex; align-items: center; gap: 2.5px; }
+  .prompt .sel svg { width: 7px; height: 7px; }
+
+  /* Spec card */
+  .spec { background: #fff; padding: 9px 7px 0 30.5px; font-size: 12.6px; line-height: 20.2px; letter-spacing: -.005em; color: #1c1c1c; }
+  .spec::before { content: ""; position: absolute; left: 18px; top: 18px; width: 4px; height: 4px; border-radius: 50%; background: #8e8e8e; }
+  .spec code {
+    font-family: "Roboto Mono", ui-monospace, monospace; font-weight: 500; font-size: 11.2px;
+    color: #4b48e6; background: #f2f2f6; border-radius: 3px; padding: 1px 3px;
+  }
+  .spec code.b { font-weight: 600; }
+
+  /* Selected element (Figma Make edit mode) */
+  .selected { background: #fff; }
+  .selected .tag { position: absolute; left: 10px; top: 3px; height: 10.5px; padding: 0 4px; border-radius: 2px; background: #4a8ff5; color: #fff; font-size: 7.6px; font-weight: 500; display: flex; align-items: center; gap: 3px; }
+  .selected .frame { position: absolute; left: 9.5px; top: 16.8px; width: 302px; height: 53px; border: 1.5px solid #4a8ff5; }
+  .selected .inner { position: absolute; left: 11.5px; top: 19.5px; width: 298px; height: 48.5px; border: 1px solid #e3e3e3; border-radius: 5px; }
+  .selected .p { position: absolute; left: 21.7px; top: 28.4px; width: 10.5px; height: 10.5px; border-radius: 2px; background: #4a8ff5; color: #fff; font-size: 7.6px; font-weight: 500; display: grid; place-items: center; }
+  .selected .t { position: absolute; left: 32.3px; top: 27.6px; font-size: 9.7px; font-weight: 700; color: #26283a; }
+  .selected .line { position: absolute; left: 21px; top: 40.4px; height: 15.6px; padding: 0 1.5px; border: 1.5px solid #4a8ff5; font-size: 8.9px; line-height: 12.6px; color: #2c2e3c; white-space: nowrap; }
+  .selected .h { position: absolute; background: #4a8ff5; }
+  .selected .plus { position: absolute; left: 282.5px; top: 36.6px; width: 12.7px; height: 12.7px; }
+
+  /* Chat bubble with pasted frames */
+  .chat { background: #fff; }
+  .chat .thumb {
+    position: absolute; top: 12px; width: 43.7px; height: 43.7px; border-radius: 4px; background: #fff;
+    border: 1px solid #e6e6e6; box-shadow: 0 1px 2px rgba(0,0,0,.08); overflow: hidden;
+  }
+  .chat .thumb i { position: absolute; left: 4px; height: 2px; border-radius: 1px; background: #e2e3ea; }
+  .chat .thumb i.d { background: #c9cbd6; }
+  .chat .thumb b { position: absolute; left: 3px; right: 3px; height: 8px; border: 1px solid #ececf0; border-radius: 2px; }
+  .chat .thumb .badge { position: absolute; right: 2.5px; top: 2.5px; width: 13px; height: 13px; border-radius: 3px; background: #3d8cf6; display: grid; place-items: center; }
+  .chat .bubble { position: absolute; left: 34.3px; top: 63.4px; width: 228px; height: 80px; border-radius: 14px; background: #f3f3f3; padding: 8px 10px 0 10.3px; font-size: 11.1px; line-height: 15.9px; color: #1f1f1f; }
+
+  /* Toolbar + tooltip */
+  .toolbar { background: #fff; }
+  .toolbar .ic { position: absolute; top: 11.8px; width: 15px; height: 15px; color: #222; }
+  .toolbar .ic svg { width: 15px; height: 15px; stroke-width: 1.9; }
+  .toolbar .on { position: absolute; left: 144.2px; top: 6.7px; width: 25.3px; height: 25.3px; border-radius: 5px; background: #eeeeee; }
+  #tooltip.html { display: grid; place-items: center; background: #161616; color: #fff; font: 500 9.5px/1 "Inter", system-ui, sans-serif; overflow: visible; }
+  #tooltip.html::before { content: ""; position: absolute; left: 50%; top: -4px; margin-left: -4.5px; border: 4.5px solid transparent; border-top: 0; border-bottom: 4.5px solid #161616; }
+</style>
+</head>
+<body>
+<div id="stage" role="img" aria-label="Figma Make research collage: the 'What do you want to make?' prompt surrounded by a component spec, a chat with pasted frames, an edit toolbar, a selected element and the Figma Make logo.">
+
+  <div class="glow" aria-hidden="true"></div>
+
+  <!-- hero shadow (behind everything) -->
+  <div class="layer" id="L-hshadow"><div class="card" id="hero-shadow"><div class="blob"></div></div></div>
+
+  <!-- back cards -->
+  <div class="layer" id="L-spec"><div class="card" id="spec"><div class="float"><div class="sticker"><div class="ui spec"><code class="b">PopoverMenu</code> <b>component</b> — reusable, takes <code>items: { label, onClick }[]</code> and <code>onClose</code>. Styled with the app's design language: white bg, 8px radius, soft shadow, <code>#e5e7eb</code> border, items in DM Sans 14px <code>#33405e</code>, <code>#f5f5ff</code> hover. Number of items is variable.</div></div></div></div></div>
+  <div class="layer" id="L-chat"><div class="card" id="chat"><div class="float"><div class="sticker"><div class="ui chat">
+          <div class="thumb" style="left:115.7px"><i class="d" style="top:8px; width:22px"></i><i class="" style="top:12px; width:28px"></i><i class="" style="top:16px; width:18px"></i><b style="top:21px"></b><b style="top:31px"></b><div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="8" height="8" stroke-width="2.2" style="color:#fff"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div></div><div class="thumb" style="left:167px"><i class="d" style="top:8px; width:22px"></i><i class="" style="top:12px; width:28px"></i><i class="" style="top:16px; width:24px"></i><b style="top:21px"></b><b style="top:31px"></b><div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="8" height="8" stroke-width="2.2" style="color:#fff"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div></div><div class="thumb" style="left:218.6px"><i class="d" style="top:8px; width:22px"></i><i class="" style="top:12px; width:26px"></i><i class="" style="top:16px; width:16px"></i><b style="top:21px"></b><b style="top:31px"></b><div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="8" height="8" stroke-width="2.2" style="color:#fff"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div></div>
+          <div class="bubble">Make a hight fidelity prototype based on the frames I pasted. The frames are named screen 1, screen 2, screen 3</div>
+        </div></div></div></div></div>
+
+  <!-- hero -->
+  <div class="layer" id="L-hero"><div class="card" id="hero"><div class="float"><div class="sticker"><div class="ui prompt">
+          <h3>What do you want to make?</h3>
+          <div class="box">
+            <div class="ph">Describe your idea. Attach a design to guide the result.</div>
+            <div class="btn" style="left:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="color:#222"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="btn" style="left:39.5px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="11" height="11" style="color:#9a9a9a"><path d="M4 20 15 9"/><path d="m13 7 4 4"/><path d="M19 3v4M17 5h4M8 3v2M7 4h2"/></svg></div>
+            <div class="sel" style="left:313px">Build <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="8" height="8" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></div>
+            <div class="sel" style="left:369px">Default <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="8" height="8" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></div>
+            <div class="btn" style="left:423px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="color:#222"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M10 10v10M8 3v3M16 3v3"/></svg></div>
+            <div class="btn mic" style="left:454px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="color:#5b54f0"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></div>
+            <div class="btn send" style="left:484px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" stroke-width="2" style="color:#fff"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+          </div>
+        </div></div></div></div></div>
+
+  <!-- floating stickers -->
+  <div class="layer" id="L-selected"><div class="card" id="selected"><div class="float"><div class="sticker"><div class="ui selected">
+          <div class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="7" height="7" stroke-width="2.4"><path d="M4 7h16M4 12h16M4 17h16"/></svg>div</div>
+          <div class="inner"></div>
+          <div class="frame"></div>
+          <div class="p">p</div><div class="t">est</div>
+          <div class="line">Add sample values and run a test.</div>
+          <div class="h" style="left:157px; top:22.4px; width:7.5px; height:1.2px"></div>
+          <div class="h" style="left:157px; top:63.5px; width:7.5px; height:1.2px"></div>
+          <div class="h" style="left:16.3px; top:40.4px; width:1.2px; height:7.5px"></div>
+          <div class="h" style="left:304px; top:40.4px; width:1.2px; height:7.5px"></div>
+          <svg class="plus" viewBox="0 0 24 24" fill="none" stroke="#6361f0" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v8M8 12h8"/></svg>
+        </div></div></div></div></div>
+  <div class="layer" id="L-logo"><div class="card" id="logo"><div class="float"><div class="sticker"><img src="assets/figma-make-logo.png" alt=""></div></div></div></div>
+  <div class="layer" id="L-ai"><div class="card" id="ai"><div class="float"><div class="pill">✦ AI</div></div></div></div>
+  <div class="layer" id="L-toolbar">
+    <div class="card" id="toolbar">
+      <div class="float" style="position:relative">
+        <div class="sticker"><div class="ui toolbar">
+          <div class="on"></div><div class="ic" style="left:26px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="5" width="14" height="13" rx="2"/><path d="M3 9h14"/><rect x="15" y="10" width="6" height="10" rx="1.5"/></svg></div><div class="ic" style="left:57.4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="m14 5 5 5-9 9H5v-5Z"/><path d="m12 7 5 5"/></svg></div><div class="ic" style="left:87.6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20 12a8 8 0 1 1-3.3-6.5A8 8 0 0 1 20 12Z"/><path d="M4.5 19.5 6 16"/></svg></div><div class="ic" style="left:118.4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M4 16v3a1 1 0 0 0 1 1h3"/><path d="M8 8h3M8 11h2"/><path d="m13 13 7 3-3 1-1 3Z"/></svg></div><div class="ic" style="left:149.8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 3v3M5.6 5.6l2 2M3 12h3M18.4 5.6l-2 2"/><path d="m11 11 9 3.5-3.8 1.4-1.6 3.8Z"/></svg></div><div class="ic" style="left:180px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="4" y="4" width="16" height="13" rx="2"/><path d="M8 9h8M8 12.5h5M7 17v3l3-3"/></svg></div><div class="ic" style="left:210.8px"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></div>
+        </div></div>
+        <div id="tooltip" class="html">Edit</div>
+        <svg id="cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2.5 L4 19 L8.6 14.9 L11.6 21.4 L14.6 20 L11.7 13.6 L18 13.3 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(() => {
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  // Rest rotations give the fanned "promo" composition; hover pushes the fan further open.
+  const REST = {
+    '#spec': -5, '#chat': 4.5, '#hero': 0, '#selected': 3.5, '#toolbar': -3, '#logo': -8, '#ai': -6,
+  };
+  Object.entries(REST).forEach(([sel, r]) => gsap.set(sel, { rotate: r }));
+
+  const CONFIG = {
+    frame: { w: 979, h: 669 },
+    margin: 0.9,
+    ease: 'back.out(2.1)',
+    duration: 0.65,
+    leaveSpeed: 1.5,
+    cards: [
+      // Back cards tip outward, away from the hero
+      { el: '#spec',  layer: '#L-spec',  origin: '80% 80%', hover: { x: -26, y: -16, rotate: -10, scale: 0.97 }, depth: -10, lean: 1.5 },
+      { el: '#chat',  layer: '#L-chat',  origin: '20% 20%', hover: { x: 24,  y: 18,  rotate: 9,   scale: 0.97 }, depth: -10, lean: 1.5 },
+      // Hero lifts toward the viewer
+      { el: '#hero-shadow', layer: '#L-hshadow', origin: '50% 50%', hover: { x: 0, y: 16, rotate: 0, scale: 1.14 }, depth: 14, lean: 1 },
+      { el: '#hero',  layer: '#L-hero',  origin: '50% 50%', hover: { x: 0,   y: -6,  rotate: 0,   scale: 1.04 }, depth: 14,  lean: 1 },
+      // Stickers pop outward with extra spin; they sit closest, so they move most with the pointer
+      { el: '#selected', layer: '#L-selected', origin: '20% 50%', hover: { x: 20,  y: -12, rotate: 7,   scale: 1.06 }, depth: 26, lean: 2.5 },
+      { el: '#toolbar',  layer: '#L-toolbar',  origin: '30% 50%', hover: { x: 14,  y: -18, rotate: -6,  scale: 1.06 }, depth: 34, lean: 3 },
+      { el: '#logo',     layer: '#L-logo',     origin: '80% 50%', hover: { x: -22, y: 12,  rotate: -13, scale: 1.08 }, depth: 30, lean: -3 },
+      { el: '#ai',       layer: '#L-ai',       origin: '50% 50%', hover: { x: -12, y: 18,  rotate: -11, scale: 1.12 }, depth: 40, lean: -3 },
+    ],
+    extras(tl) {
+      // The cursor glides onto the "Edit" icon, presses, and the tooltip pops
+      tl.fromTo('#cursor', { x: 26, y: 18, rotate: 0 }, { x: 0, y: 0, duration: 0.45, ease: 'power3.out' }, 0.05)
+        .to('#cursor', { keyframes: { scale: [1, 0.82, 1] }, duration: 0.22, ease: 'power1.inOut' }, 0.42)
+        .fromTo('#tooltip', { opacity: 0, y: -4, scale: 0.7, transformOrigin: '50% 0%' },
+                            { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: 'back.out(3)' }, 0.48)
+      // Hero shadow deepens as it lifts
+        .fromTo('#hero-shadow .blob', { opacity: 0.75 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0)
+      // The glow swells
+        .fromTo('.glow', { scale: 1, opacity: 1 }, { scale: 1.08, opacity: 1, duration: 0.6, ease: 'power2.out' }, 0);
+    },
+  };
+
+  // ============================================================
+  // ENGINE — reusable, no edits needed
+  // ============================================================
+  const { w: W, h: H } = CONFIG.frame;
+  const stage = document.getElementById('stage');
+  const params = new URLSearchParams(location.search);
+
+  function fit() {
+    const s = Math.min(innerWidth / W, innerHeight / H) * CONFIG.margin;
+    stage.style.transform = `translate(${-W * s / 2}px, ${-H * s / 2}px) scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  // Layers pivot around their card's centre for the pointer lean
+  function pivotLayers() {
+    CONFIG.cards.forEach((c) => {
+      const el = document.querySelector(c.el);
+      const cx = el.offsetLeft + el.offsetWidth / 2, cy = el.offsetTop + el.offsetHeight / 2;
+      gsap.set(c.layer, { transformOrigin: `${cx}px ${cy}px` });
+      gsap.set(c.el, { transformOrigin: c.origin || '50% 50%' });
+      if (c.shadow) gsap.set(c.el, { filter: c.shadow.rest });
+    });
+  }
+  pivotLayers();
+
+  const tl = gsap.timeline({ paused: true });
+  CONFIG.cards.forEach((c, i) => {
+    tl.to(c.el, { ...c.hover, duration: CONFIG.duration, ease: CONFIG.ease }, i * 0.03);
+    if (c.shadow) tl.to(c.el, { filter: c.shadow.hover, duration: CONFIG.duration - 0.15, ease: 'power2.out' }, i * 0.03);
+  });
+  CONFIG.extras(tl);
+
+  const open = () => tl.timeScale(1).play();
+  const close = () => tl.timeScale(CONFIG.leaveSpeed).reverse();
+
+  // Pointer parallax + lean (eased follow)
+  const q = CONFIG.cards.map((c) => ({
+    c,
+    x: gsap.quickTo(c.layer, 'x', { duration: 0.6, ease: 'power3.out' }),
+    y: gsap.quickTo(c.layer, 'y', { duration: 0.6, ease: 'power3.out' }),
+    r: gsap.quickTo(c.layer, 'rotate', { duration: 0.8, ease: 'power3.out' }),
+  }));
+  function follow(e) {
+    const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;   // -0.5…0.5
+    q.forEach(({ c, x, y, r }) => { x(nx * c.depth); y(ny * c.depth); r(nx * c.lean); });
+  }
+  const settle = () => q.forEach(({ x, y, r }) => { x(0); y(0); r(0); });
+
+  const root = document.documentElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (params.has('open')) {
+    tl.progress(1);
+  } else if (reduced) {
+    root.addEventListener('pointerenter', () => tl.progress(1));
+    root.addEventListener('pointerleave', () => tl.progress(0));
+  } else {
+    root.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') open(); });
+    root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { close(); settle(); } });
+    root.addEventListener('pointermove',  (e) => { if (e.pointerType === 'mouse') follow(e); });
+    // Backup for browsers that miss pointerleave on fast exits from an iframe
+    document.addEventListener('mouseout', (e) => { if (!e.relatedTarget) { close(); settle(); } });
+    // Touch has no hover: a tap toggles
+    root.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') (tl.reversed() || tl.progress() === 0) ? open() : close();
+    });
+    // A host page can forward its own hover state: postMessage('hover:on' | 'hover:off')
+    addEventListener('message', (e) => { if (e.data === 'hover:on') open(); if (e.data === 'hover:off') { close(); settle(); } });
+  }
+  if (params.has('t')) tl.pause().progress(parseFloat(params.get('t')));
+  window.__tl = tl;
+  window.__cfg = CONFIG;
+
+  // ---------- Idle float at rest: each card bobs gently, out of phase ----------
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !params.has('open') && !params.has('t')) {
+    gsap.utils.toArray('.float').forEach((el, i) => {
+      gsap.to(el, {
+        y: i % 2 ? 4 : -4, rotate: i % 2 ? 0.6 : -0.6,
+        duration: 2.6 + (i % 4) * 0.4, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * 0.23,
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
