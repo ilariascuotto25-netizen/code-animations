@@ -220,5 +220,21 @@
   }
 })();
 </script>
+<script>
+/* Click-through for embeds: add ?href=<full page URL> to the embed link and a click anywhere on the
+   animation opens that page in the same tab (&target=blank opens a new tab). Hover and pointer-follow
+   keep working because the link layer sits on top and pointer events still bubble to the page. */
+(() => {
+  const p = new URLSearchParams(location.search), href = p.get('href');
+  if (!href) return;
+  const a = document.createElement('a');
+  a.href = href;
+  a.target = p.get('target') === 'blank' ? '_blank' : '_top';
+  a.rel = 'noopener';
+  a.setAttribute('aria-label', p.get('label') || 'Open case study');
+  a.style.cssText = 'position:fixed;inset:0;z-index:2147483647;cursor:pointer;background:transparent;-webkit-tap-highlight-color:transparent';
+  document.body.appendChild(a);
+})();
+</script>
 </body>
 </html>
