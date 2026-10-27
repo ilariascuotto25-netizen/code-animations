@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     PROMO-COLLAGE TEMPLATE
+     A Figma frame recomposed as a "promo" collage: a centred hero,
+     tilted back cards fanned behind it, floating sticker cards and
+     pills around it, a soft glow underneath.
+     Motion: idle float at rest → hover fans the collage open
+     (back cards tip out, hero lifts, stickers pop with spin)
+     → every card follows the pointer at its own depth.
+     Rule: anything purple/blurred (glow, hero shadow) lives on its
+     own layer BEHIND all cards, and only transform/opacity animate.
+     ============================================================ */
+  :root {
+    --purple: #6361f0;
+    --sticker-shadow: 0 30px 70px -22px rgba(105,0,46,.20);
+    /* soft deep-magenta shadows for a #FF0F7B section; page background stays transparent */
+    --ink: #33405e;
+    --line: #afd790;
+    --violet: #6361f0;
+    --violet-bg: #eeeeff;
+    --violet-border: #bbbbf5;
+    --n200: #e5e7eb;
+    --purple-50: #f5f5ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: transparent; overflow: hidden; }
+  body { font-family: "DM Sans", system-ui, sans-serif; font-variation-settings: "opsz" 14; -webkit-font-smoothing: antialiased; cursor: default; }
+  #stage { position: absolute; left: 50%; top: 50%; width: 979px; height: 669px; transform-origin: 0 0; }
+  .layer { position: absolute; inset: 0; will-change: transform; pointer-events: none; }
+  .card { position: absolute; will-change: transform; }
+  .float { width: 100%; height: 100%; will-change: transform; }
+
+  /* Soft two-tone glow behind the group — centre it under the hero */
+  .glow {
+    position: absolute; left: 140px; top: 90px; width: 700px; height: 490px; border-radius: 50%;
+    background:
+      radial-gradient(closest-side at 42% 50%, rgba(160,150,255,.55), rgba(160,150,255,0) 100%),
+      radial-gradient(closest-side at 70% 45%, rgba(120,190,255,.35), rgba(120,190,255,0) 100%);
+    filter: blur(24px);
+  }
+
+  /* Sticker surface: white card, hairline, lifted shadow (static — never animate box-shadow) */
+  .sticker {
+    width: 100%; height: 100%; background: #fff; border-radius: 16px; overflow: hidden;
+    border: 1px solid rgba(105,0,46,.08); box-shadow: var(--sticker-shadow);
+  }
+  .sticker > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /* Hero: only a light neutral contact shadow on the card itself */
+  #hero .sticker { border-radius: 22px; box-shadow: 0 26px 60px -22px rgba(92,0,40,.16); }
+  /* Hero's purple shadow: own layer behind everything. Size ≈ hero minus 40px wide, offset ~34px down */
+  #hero-shadow .blob { width: 100%; height: 100%; border-radius: 40px; background: rgba(110,0,48,.20); filter: blur(52px); }
+
+  /* Pill sticker (e.g. "✦ AI") */
+  .pill {
+    width: 100%; height: 100%; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: linear-gradient(135deg, #7c5cff, #6361f0 55%, #4f46e5);
+    color: #fff; font-weight: 700; font-size: 18px; letter-spacing: .01em;
+    box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 14px 30px -8px rgba(79,70,229,.6);
+  }
+
+  /* ---- Positions (stage px) — fill in per frame ---- */
+  #hero-shadow { left: 476px; top: 134px; width: 280px; height: 442px; }
+  #hero        { left: 456px; top: 100px; width: 320px; height: 447px; }
+  #back-a      { left: 136px; top: 234px; width: 396px; height: 232px; }
+  #sticker-a   { left: 86px; top: 532px; width: 214px; height: 38px; }
+  #pill        { left: 803px; top: 197px; width: 92px;  height: 40px; }
+  #hero .sticker, #back-a .sticker { border-radius: 16px; }
+  .scaled { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  /* the panel lets one section pop out past its edge */
+  #hero .sticker { overflow: visible; }
+  /* block, ports and wires scaled up together around the block's centre, so connections stay aligned */
+  .cv .zoom { position: absolute; inset: 0; transform: scale(1.18); transform-origin: 231px 140px; }
+  #panel-spark { position: relative; z-index: 3; transform-origin: 50% 50%; }
+  #back-a .scaled { transform: scale(.72); }
+  #hero   .scaled { transform: scale(.739); }
+  /* floating output chip (one of the AI agent block's outputs) */
+  .out {
+    width: 100%; height: 100%; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 14px;
+    background: #eeeeff; border: 1.5px solid #bbbbf5; color: #6361f0;
+    font-family: "DM Sans", system-ui, sans-serif; font-weight: 500; font-size: 14px; white-space: nowrap;
+    box-shadow: 0 0 0 4px rgba(255,255,255,.9), var(--sticker-shadow);
+  }
+  .out .dot { width: 9px; height: 9px; border-radius: 50%; background: #afd790; box-shadow: 0 0 0 2px #fff; flex: none; }
+  .tile { width: 100%; height: 100%; background: #fff; border-radius: 18px; border: 1px solid rgba(105,0,46,.08); box-shadow: var(--sticker-shadow); display: grid; place-items: center; }
+  .tile img { width: 34px; height: 34px; display: block; }
+
+  /* ---------- Canvas card (left) ---------- */
+  .cv { position: relative; width: 550px; height: 322px; overflow: hidden; background: #fff; border-radius: 22.2px; color: var(--ink); }
+  .cv .bg { position: absolute; left: 0; top: -92px; width: 1440px; height: 656px; overflow: hidden; }
+  .cv .bg img { position: absolute; left: 0; top: -23.63%; width: 100%; height: 137.2%; display: block; }
+  svg.wires { position: absolute; inset: 0; width: 550px; height: 322px; overflow: visible; }
+  .wire { fill: none; stroke: var(--line); stroke-width: 3; }
+  .head { fill: var(--line); }
+
+  .node {
+    position: absolute; left: 121px; top: 63px; width: 220px;
+    filter: drop-shadow(0 4px 2px rgba(0,0,0,.04)) drop-shadow(0 8px 4px rgba(0,0,0,.06)) drop-shadow(0 16px 8px rgba(0,0,0,.08));
+  }
+  .node-head {
+    background: #fff; border-radius: 3px 3px 0 0; padding: 8px 16px 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .title-wrap { display: flex; align-items: center; gap: 10px; }
+  .icon16 { width: 16px; height: 16px; display: block; flex: none; }
+  .titles { white-space: nowrap; }
+  .titles b { display: block; font-weight: 700; font-size: 14px; line-height: 22px; margin-bottom: -4px; }
+  .titles span { display: block; font-size: 12px; line-height: 20px; }
+  .node-body {
+    background: #fff; border: 1px solid #fff; border-radius: 0 0 3px 3px;
+    padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .row {
+    height: 30px; padding: 0 10px; display: flex; align-items: center;
+    background: var(--violet-bg); border: 1px solid var(--violet-border); border-radius: 3px;
+    color: var(--violet); font-weight: 500; font-size: 11px; line-height: 28px;
+  }
+  /* Selection ring that appears when the block is "clicked" */
+  .node .sel {
+    position: absolute; inset: -4px; border-radius: 6px;
+    border: 2px solid var(--violet); opacity: 0; pointer-events: none;
+  }
+  .port { position: absolute; width: 20px; height: 20px; }
+  .port img.dot { position: absolute; inset: 0; width: 20px; height: 20px; }
+  .port img.plus { position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; }
+
+  /* ---------- Settings panel (right) ---------- */
+  .panel {
+    --shadow-a: .25;
+    width: 433px; background: #fff; border: 2px solid var(--n200); border-radius: 21.6px; color: var(--ink);
+  }
+  .panel-head {
+    padding: 16px; border-bottom: 1px solid var(--n200);
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .panel-head .l { display: flex; align-items: center; gap: 16px; }
+  .panel-head .t { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; line-height: 22px; }
+  .icon24 { width: 24px; height: 24px; display: block; }
+  .xmark { width: 16px; height: 16px; display: grid; place-items: center; }
+  .xmark img { width: 12px; height: 12px; display: block; }
+
+  .panel-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .section { border: 1px solid var(--n200); border-radius: 8px; background: #fff; will-change: transform, opacity; }
+  .section h4 { font-weight: 700; font-size: 14px; line-height: 24px; }
+  .section p.desc { font-size: 12px; line-height: 20px; }
+
+  .instructions { padding: 8px 16px 12px; display: flex; flex-direction: column; gap: 12px; }
+  .instructions .hdr { display: flex; flex-direction: column; gap: 2px; }
+  .textfield {
+    position: relative; height: 111px; width: 369px;
+    border: 1px solid var(--n200); border-radius: 4px; padding: 8px; overflow: hidden;
+    font-size: 14px; line-height: normal;
+  }
+  .textfield .txt { width: 335px; white-space: pre-wrap; }
+  .textfield .tools { position: absolute; left: 349px; top: 6px; display: flex; flex-direction: column; gap: 8px; }
+  .textfield .tools img { width: 14px; height: 14px; display: block; }
+
+  .collapsed { padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .collapsed .top { display: flex; align-items: center; gap: 16px; }
+  .collapsed .name { display: flex; align-items: center; gap: 8px; }
+  .chev { width: 10px; height: 10px; display: block; transform: rotate(-90deg); }
+  .tag {
+    background: var(--purple-50); border: 1px solid #e0ddff; border-radius: 4px; padding: 2px 8px;
+    color: var(--violet); font-weight: 500; font-size: 10px; line-height: 16px;
+  }
+  .collapsed .plus24 { width: 24px; height: 24px; display: block; flex: none; }
+  .collapsed .info { display: flex; flex-direction: column; gap: 2px; }
+
+</style>
+</head>
+<body>
+<div id="stage" role="img" aria-label="AI agent collage: the AI agent settings panel at the centre with the Landbot canvas behind it, an AI pill, an output chip and a sparkles tile floating around.">
+
+
+  <!-- DOM order = paint order. Shadow first, then back cards, hero, stickers. -->
+  <div class="layer" id="L-hshadow"><div class="card" id="hero-shadow"><div class="blob"></div></div></div>
+
+  <div class="layer" id="L-back-a"><div class="card" id="back-a"><div class="float"><div class="sticker"><div class="scaled"><div class="cv">
+    <div class="bg"><img src="assets/bg.png" alt=""></div>
+      <div class="zoom">
+    <svg class="wires" viewBox="0 0 550 322" aria-hidden="true">
+      <!-- Geometry mirrors the Figma connector vectors (3px stroke, 15×17 arrowheads). -->
+      <path class="wire" d="M-41 225 H26.5 V169 H107.5"/>
+      <polygon class="head" points="106,160.34 121,169 106,177.66"/>
+      <path class="wire" d="M343 137 H453 V81 H593.5"/>
+      <path class="wire" d="M343 169 H453 V209 H593.5"/>
+      <path class="wire" d="M343 204 H412.26 V272 H593.5"/>
+    </svg>
+
+    <div class="node" id="node">
+      <div class="sel" id="sel"></div>
+      <div class="node-head">
+        <div class="title-wrap">
+          <img class="icon16" id="node-spark" src="assets/sparkles.svg" alt="">
+          <div class="titles"><b>AI agent</b><span>Lead qualification</span></div>
+        </div>
+        <img class="icon16" src="assets/ellipsis.svg" alt="">
+      </div>
+      <div class="node-body">
+        <div class="row">minimum_info_captured</div>
+        <div class="row">transfer_to_human</div>
+        <div class="row">back_to_linear</div>
+      </div>
+    </div>
+    <div class="port" style="left:323px; top:127px"><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+    <div class="port" style="left:323px; top:160px"><img class="dot" src="assets/port-group.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+    <div class="port" style="left:323px; top:194px"><img class="dot" src="assets/port-green.svg" alt=""><img class="plus" src="assets/plus.svg" alt=""></div>
+  </div>
+    </div></div></div></div></div></div>
+
+  <div class="layer" id="L-hero"><div class="card" id="hero"><div class="float"><div class="sticker"><div class="scaled"><div class="panel" id="panel">
+      <div class="panel-head">
+        <div class="l">
+          <img class="icon24" id="panel-spark" src="assets/sparkles-24.svg" alt="">
+          <div class="t">AI agent <img class="icon16" src="assets/ellipsis-panel.svg" alt=""></div>
+        </div>
+        <div class="xmark"><img src="assets/xmark.svg" alt=""></div>
+      </div>
+      <div class="panel-body">
+        <div class="section instructions">
+          <div class="hdr">
+            <h4>Instructions</h4>
+            <p class="desc">Specify the rules and steps that the agent should follow.</p>
+          </div>
+          <div class="textfield">
+            <div class="txt">## ROLE
+You are a lead qualification analyst.
+## CONTEXT
+You receive structured lead data collected earlier in the flow.
+## TASKS
+- Review the available input data: @entry_intent, @is_business_lead, @team_size, @user_need, @user_email, @user_phone.</div>
+            <div class="tools"><img src="assets/plus-14.svg" alt=""><img src="assets/expand.svg" alt=""></div>
+          </div>
+        </div>
+
+        <div class="section collapsed">
+          <div class="info">
+            <div class="top"><div class="name"><img class="chev" src="assets/chevron-down.svg" alt=""><h4>Knowledge base</h4></div><span class="tag">3</span></div>
+            <p class="desc">Content the agent should use to answer.</p>
+          </div>
+          <img class="plus24" src="assets/circle-plus.svg" alt="">
+        </div>
+        <div class="section collapsed">
+          <div class="info">
+            <div class="top"><div class="name"><img class="chev" src="assets/chevron-down.svg" alt=""><h4>Store data</h4></div><span class="tag">3</span></div>
+            <p class="desc">Capture or generate data from the conversation.</p>
+          </div>
+          <img class="plus24" src="assets/circle-plus.svg" alt="">
+        </div>
+        <div class="section collapsed">
+          <div class="info">
+            <div class="top"><div class="name"><img class="chev" src="assets/chevron-down.svg" alt=""><h4>Interactive components</h4></div><span class="tag">4</span></div>
+            <p class="desc">Display interactive elements dynamically.</p>
+          </div>
+          <img class="plus24" src="assets/circle-plus.svg" alt="">
+        </div>
+        <div class="section collapsed">
+          <div class="info">
+            <div class="top"><div class="name"><img class="chev" src="assets/chevron-down.svg" alt=""><h4>Outputs</h4></div><span class="tag">2</span></div>
+            <p class="desc">Transfer back to the bot based on triggers.</p>
+          </div>
+          <img class="plus24" src="assets/circle-plus.svg" alt="">
+        </div>
+      </div>
+    </div></div></div></div></div></div>
+
+  <div class="layer" id="L-sticker-a"><div class="card" id="sticker-a"><div class="float"><div class="out" id="out">minimum_info_captured<span class="dot"></span></div></div></div></div>
+  <div class="layer" id="L-pill"><div class="card" id="pill"><div class="float"><div class="pill">✦ AI</div></div></div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(() => {
+  // ============================================================
+  // CONFIG — the only part that changes between frames
+  // ============================================================
+  // Rest tilts create the fanned promo look (hero stays at 0; alternate signs around it, ±3–8°)
+  const REST = { '#back-a': -5, '#hero': 0, '#sticker-a': -4, '#pill': 8 };
+  Object.entries(REST).forEach(([sel, r]) => gsap.set(sel, { rotate: r }));
+
+  const CONFIG = {
+    frame: { w: 979, h: 669 },
+    margin: 0.9,
+    ease: 'back.out(2.1)',
+    duration: 0.65,
+    leaveSpeed: 1.5,
+    // hover.rotate is the absolute tilt on hover (≈ rest tilt × 1.8, same sign).
+    // depth: back −10, hero 14, stickers 26–40 (closest moves most). lean: same sign as tilt direction you want.
+    cards: [
+      { el: '#hero-shadow', layer: '#L-hshadow', origin: '50% 50%', hover: { x: 0, y: 16, rotate: 0, scale: 1.12 }, depth: 14, lean: 1 },
+      { el: '#back-a',    layer: '#L-back-a',    origin: '85% 50%', hover: { x: -24, y: 14,  rotate: -9,  scale: 0.97 }, depth: -10, lean: 1.5 },
+      { el: '#hero',      layer: '#L-hero',      origin: '50% 50%', hover: { x: 0,   y: -6,  rotate: 0,   scale: 1.04 }, depth: 14,  lean: 1 },
+      { el: '#sticker-a', layer: '#L-sticker-a', origin: '80% 50%', hover: { x: -14, y: 12,  rotate: -8,  scale: 1.08 }, depth: 30,  lean: -2 },
+      { el: '#pill',      layer: '#L-pill',      origin: '50% 50%', hover: { x: 14,  y: -12, rotate: 13,  scale: 1.12 }, depth: 40,  lean: 3 },
+    ],
+    extras(tl) {
+      tl.fromTo('#hero-shadow .blob', { opacity: 0.75 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0);
+      // Story beat: the block is selected, the agent reads its instructions, sparkles twinkle
+      tl.fromTo('#sel', { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, 0.05)
+        .to('#node-spark',  { rotate: 90, scale: 1.25, duration: 0.5, ease: 'back.out(3)' }, 0.05)
+        .fromTo('#panel .section', { y: 0 }, { y: (i) => -2.5 * i, duration: 0.5, ease: 'power3.out', stagger: 0.025 }, 0.06)
+        // The panel's yellow sparkle twinkles with a quarter turn
+        .to('#panel-spark', { rotate: -90, scale: 1.15, duration: 0.5, ease: 'back.out(3)' }, 0.1);
+    },
+  };
+
+  // ============================================================
+  // ENGINE — reusable, no edits needed
+  // ============================================================
+  const { w: W, h: H } = CONFIG.frame;
+  const stage = document.getElementById('stage');
+  const params = new URLSearchParams(location.search);
+
+  // Sizing inside the embed. ?fit=contain (default: whole frame visible) | width (fill the width)
+  // | height | cover (fill the box, may crop). ?margin=1 removes the breathing room (default CONFIG.margin).
+  function fit() {
+    const mode = params.get('fit') || 'contain';
+    const margin = params.has('margin') ? parseFloat(params.get('margin')) : CONFIG.margin;
+    const sx = innerWidth / W, sy = innerHeight / H;
+    const base = mode === 'cover' ? Math.max(sx, sy) : mode === 'width' ? sx : mode === 'height' ? sy : Math.min(sx, sy);
+    const s = base * margin;
+    stage.style.transform = `translate(${-W * s / 2}px, ${-H * s / 2}px) scale(${s})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  // Layers pivot around their card's centre for the pointer lean
+  function pivotLayers() {
+    CONFIG.cards.forEach((c) => {
+      const el = document.querySelector(c.el);
+      const cx = el.offsetLeft + el.offsetWidth / 2, cy = el.offsetTop + el.offsetHeight / 2;
+      gsap.set(c.layer, { transformOrigin: `${cx}px ${cy}px` });
+      gsap.set(c.el, { transformOrigin: c.origin || '50% 50%' });
+      if (c.shadow) gsap.set(c.el, { filter: c.shadow.rest });
+    });
+  }
+  pivotLayers();
+
+  const tl = gsap.timeline({ paused: true });
+  CONFIG.cards.forEach((c, i) => {
+    tl.to(c.el, { ...c.hover, duration: CONFIG.duration, ease: CONFIG.ease }, i * 0.03);
+    if (c.shadow) tl.to(c.el, { filter: c.shadow.hover, duration: CONFIG.duration - 0.15, ease: 'power2.out' }, i * 0.03);
+  });
+  CONFIG.extras(tl);
+
+  const open = () => tl.timeScale(1).play();
+  const close = () => tl.timeScale(CONFIG.leaveSpeed).reverse();
+
+  // Pointer parallax + lean (eased follow)
+  const q = CONFIG.cards.map((c) => ({
+    c,
+    x: gsap.quickTo(c.layer, 'x', { duration: 0.6, ease: 'power3.out' }),
+    y: gsap.quickTo(c.layer, 'y', { duration: 0.6, ease: 'power3.out' }),
+    r: gsap.quickTo(c.layer, 'rotate', { duration: 0.8, ease: 'power3.out' }),
+  }));
+  function follow(e) {
+    const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;   // -0.5…0.5
+    q.forEach(({ c, x, y, r }) => { x(nx * c.depth); y(ny * c.depth); r(nx * c.lean); });
+  }
+  const settle = () => q.forEach(({ x, y, r }) => { x(0); y(0); r(0); });
+
+  const root = document.documentElement;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (params.has('open')) {
+    tl.progress(1);
+  } else if (reduced) {
+    root.addEventListener('pointerenter', () => tl.progress(1));
+    root.addEventListener('pointerleave', () => tl.progress(0));
+  } else {
+    root.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') open(); });
+    root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { close(); settle(); } });
+    root.addEventListener('pointermove',  (e) => { if (e.pointerType === 'mouse') follow(e); });
+    // Backup for browsers that miss pointerleave on fast exits from an iframe
+    document.addEventListener('mouseout', (e) => { if (!e.relatedTarget) { close(); settle(); } });
+    // Touch has no hover: a tap toggles
+    root.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') (tl.reversed() || tl.progress() === 0) ? open() : close();
+    });
+    // A host page can forward its own hover state: postMessage('hover:on' | 'hover:off')
+    addEventListener('message', (e) => { if (e.data === 'hover:on') open(); if (e.data === 'hover:off') { close(); settle(); } });
+  }
+  if (params.has('t')) tl.pause().progress(parseFloat(params.get('t')));
+  window.__tl = tl;
+  window.__cfg = CONFIG;
+
+  // ---------- Idle float at rest: each card bobs gently, out of phase ----------
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !params.has('open') && !params.has('t')) {
+    gsap.utils.toArray('.float').forEach((el, i) => {
+      gsap.to(el, {
+        y: i % 2 ? 4 : -4, rotate: i % 2 ? 0.6 : -0.6,
+        duration: 2.6 + (i % 4) * 0.4, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * 0.23,
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
