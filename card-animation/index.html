@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kanji card animation</title>
 <!-- A 15-second loop of the kanji card, in the app's own design tokens:
-     card → colour-coded phrases → phrase sheet → word sheet → mark as learned → progress. -->
+     memory story → vocabulary → word sheet → phrase sheet (grammar tints) → Learned pill in the bottom bar. -->
 <style>
 :root { --bg:#f9f7fd; --card:#fff; --ink:#1d1b18; --muted:#6b665e; --line:#eae6f7; --brand:#310a3e; --brand-soft:#eae6f7;
         --tag:#eee9f0; --tag-ink:#6b665e; --light-gray:#f7f7f7; --learn-on:#9bd8a8; --learn-ink:#1d5631; --read-tint:#f5f3fc;
-        --hover-line:#bba6ee; --hover-strong:#8f72dc; --particle:#e58900; --verb:#16aa6f;
+        --hover-line:#bba6ee; --hover-strong:#8f72dc; --verb-tint:#ddf3e7; --particle-tint:#fde8cc; --pick:#310a3e;
         --shadow:0 4px 24px rgba(26,20,77,.12); --soft-shadow:0 1px 2px rgba(49,10,62,.06), 0 2px 8px rgba(49,10,62,.06); }
 * { box-sizing:border-box; }
 html, body { height:100%; margin:0; }
@@ -19,7 +19,7 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 .stage { width:390px; height:800px; transform-origin:center; }
 .phone { position:relative; width:390px; height:800px; border-radius:48px; background:var(--bg); overflow:hidden;
          box-shadow:0 0 0 10px #1d1b18, 0 30px 80px rgba(26,20,77,.25); }
-.screen { position:absolute; inset:0; padding:22px 16px 16px; display:flex; flex-direction:column; gap:12px; }
+.screen { position:absolute; inset:0; padding:22px 16px 96px; display:flex; flex-direction:column; gap:12px; }
 
 /* top: where this card sits in the deck (same as the app: no fill, no percentage) */
 .top { display:flex; align-items:center; gap:12px; }
@@ -41,13 +41,15 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 .meaning { font-size:17px; font-weight:700; line-height:1.25; }
 .rrow { display:grid; grid-template-columns:34px 1fr auto; font-size:13px; align-items:baseline; }
 .rl { font-size:12px; color:var(--muted); } .ro { font-size:12px; color:var(--muted); }
-.learn { position:absolute; top:16px; right:16px; width:26px; height:26px; }
-.learn circle { fill:var(--card); stroke:var(--hover-line); stroke-width:1.5; transition:fill .25s, stroke .25s; }
-.learn path { stroke:var(--hover-line); transition:stroke .25s; }
-.learn.on circle { fill:var(--learn-on); stroke:var(--learn-on); }
-.learn.on path { stroke:#fff; }
-.learn.on { animation:pop .35s ease-out; }
-@keyframes pop { 40% { transform:scale(1.3); } }
+/* Learned pill in the bottom bar: plum outline → plum fill with a mint check */
+.learn { flex:1; height:44px; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:999px; background:var(--card);
+         box-shadow:inset 0 0 0 1.5px var(--brand); color:var(--brand); font-size:15px; font-weight:600; transition:background .25s, color .25s; }
+.learn svg { width:18px; height:18px; }
+.learn .ring { fill:none; stroke:currentColor; stroke-width:1.6; } .learn .bg, .learn .tick { display:none; }
+.learn.on { background:var(--pick); color:#fff; box-shadow:none; animation:pop .35s ease-out; }
+.learn.on .ring { display:none; } .learn.on .bg, .learn.on .tick { display:inline; }
+.learn.press { transform:scale(.96); }
+@keyframes pop { 40% { transform:scale(1.04); } }
 
 .sec { border-radius:12px; overflow:hidden; border:1px solid var(--line); }
 .sec-h { display:flex; justify-content:space-between; padding:7px 12px; background:var(--read-tint);
@@ -58,17 +60,22 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 .vocab { padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; }
 .word { padding-left:10px; border-left:2px solid var(--brand-soft); }
 .word-ja { font-size:20px; font-weight:700; } .word-r { font-size:13px; color:var(--muted); margin-left:6px; } .word-en { font-size:13px; color:var(--muted); }
-.ph-box { border:2px solid var(--light-gray); border-radius:10px; overflow:hidden; }
-.ph-h { padding:4px 10px; background:var(--light-gray); font-size:10px; font-weight:700; letter-spacing:.08em; color:var(--brand); }
+.ph-box { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.ph-h { display:flex; align-items:center; justify-content:space-between; height:32px; padding:0 12px; background:var(--read-tint);
+        font-size:12px; font-weight:700; letter-spacing:.08em; color:var(--brand); }
+.ph-h .sl { gap:8px; } .ph-h .count { font-weight:400; letter-spacing:0; }
 .ph { padding:6px 8px; margin:3px; border-radius:10px; transition:background .2s; }
 .ph.tap { background:var(--read-tint); }
 .ph-ja { font-size:16px; } .ph-en { font-size:13px; color:var(--muted); }
-.pt { color:var(--particle); } .vb { color:var(--verb); }
-.pt, .vb { display:inline-block; transition:transform .25s; }
+/* grammar: ink on a soft tint (green = verbs, orange = particles) */
+.pt, .vb { display:inline-block; padding:0 2px; border-radius:4px; transition:transform .25s; }
+.pt { background:var(--particle-tint); } .vb { background:var(--verb-tint); }
 .colours .pt, .colours .vb { animation:glow .9s ease-in-out; }
 @keyframes glow { 45% { transform:translateY(-3px) scale(1.18); } }
 
-.nav { margin-top:auto; display:flex; justify-content:center; gap:24px; }
+/* white bar pinned to the bottom: Back, Learned, Next */
+.nav { position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:12px; padding:12px 16px 26px; background:var(--card);
+       border-top:1px solid var(--line); box-shadow:0 -4px 16px rgba(26,20,77,.08); }
 .nbtn { width:44px; height:44px; border-radius:50%; background:var(--card); box-shadow:inset 0 0 0 1px var(--line), var(--soft-shadow);
         display:flex; align-items:center; justify-content:center; }
 
@@ -116,7 +123,8 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 .s-word rt { font-size:12px; color:var(--muted); }
 .s-word.big { font-size:46px; font-weight:700; line-height:1.6; } .s-word.big rt { font-size:16px; }
 .s-mean { margin:0 0 16px; font-size:16px; color:var(--muted); }
-.wbtn { border-radius:6px; padding:0 2px; transition:background .2s; }
+.s-word .wbtn, .s-word .vb, .s-word .pt { display:inline-block; line-height:1.9; padding:0 3px; margin:0 1px; border-radius:6px; }
+.wbtn { border-bottom:2px dotted var(--hover-strong); border-radius:6px 6px 0 0 !important; transition:background .2s; }
 .wbtn.tap { background:var(--brand-soft); }
 .play { position:relative; width:46px; height:46px; margin:0 auto; border-radius:50%; background:var(--card);
         box-shadow:inset 0 0 0 1px var(--line), var(--soft-shadow); display:flex; align-items:center; justify-content:center; }
@@ -125,11 +133,6 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 @keyframes ring { from { transform:scale(1); opacity:.9; } to { transform:scale(1.9); opacity:0; } }
 .hint { margin:14px 0 0; font-size:12px; color:var(--muted); }
 
-/* toast */
-.toast { position:absolute; left:50%; bottom:92px; display:flex; align-items:center; gap:8px; padding:9px 16px 9px 12px;
-         border-radius:999px; background:var(--brand); color:#fff; font-size:13px; font-weight:700; white-space:nowrap;
-         opacity:0; transform:translate(-50%, 10px); transition:opacity .25s, transform .25s; }
-.toast.on { opacity:1; transform:translate(-50%, 0); }
 
 /* finger */
 .finger { position:absolute; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:rgba(49,10,62,.18);
@@ -152,7 +155,6 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
     <div class="close"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="#310A3E" stroke-width="2"/></svg></div>
   </div>
   <article class="card">
-    <svg class="learn" id="learn" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13.25"/><path d="M8.5 14.5l3.5 3.5 7.5-8" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <div class="head">
       <div class="kanji" lang="ja">学</div>
       <div class="info">
@@ -174,23 +176,24 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
     <div class="sec"><div class="sec-h" id="vocab-h"><span class="sl"><svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M2.5 3.8L5 6.3l2.5-2.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Vocabulary · N5</span><span>4</span></div>
       <div class="vocab-wrap" id="vocab"><div class="vocab">
         <div class="word"><span class="word-ja" id="v-gakusei" lang="ja">学生</span><span class="word-r">がくせい</span><div class="word-en">student</div></div>
-        <div class="ph-box" id="phrases"><div class="ph-h">PHRASES</div>
+        <div class="ph-box" id="phrases"><div class="ph-h"><span class="sl"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2.5 3.8L5 6.3l2.5-2.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>PHRASES</span><span class="count">2</span></div>
           <div class="ph" id="ph1"><div class="ph-ja" lang="ja">学生<span class="vb">です</span>。</div><div class="ph-en">I am a student.</div></div>
           <div class="ph" id="ph2"><div class="ph-ja" lang="ja">学生<span class="vb">な</span><span class="pt">の</span>？</div><div class="ph-en">Are you a student?</div></div>
         </div>
       </div></div>
     </div>
   </article>
-  <nav class="nav"><span class="nbtn"><svg width="14" height="14" viewBox="0 0 10 10"><path d="M6.5 1.5L3 5l3.5 3.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-    <span class="nbtn"><svg width="14" height="14" viewBox="0 0 10 10"><path d="M3.5 1.5L7 5 3.5 8.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></nav>
 </div>
+  <nav class="nav"><span class="nbtn"><svg width="14" height="14" viewBox="0 0 10 10"><path d="M6.5 1.5L3 5l3.5 3.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <span class="learn" id="learn"><svg viewBox="0 0 18 18"><circle class="ring" cx="9" cy="9" r="8.2"/><circle class="bg" cx="9" cy="9" r="9" fill="#9bd8a8"/><path class="tick" d="M5.4 9.3l2.3 2.3 4.9-5.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="learn-label">Mark as learned</span></span>
+    <span class="nbtn"><svg width="14" height="14" viewBox="0 0 10 10"><path d="M3.5 1.5L7 5 3.5 8.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></nav>
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet-ph"><span class="handle"></span>
   <span class="s-btn s-close"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="#310A3E" stroke-width="2"/></svg></span>
   <p class="s-word" id="ph-word" lang="ja"><span class="wbtn" id="w-gakusei"><ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby></span><span class="vb">な</span><span class="pt">の</span>？</p>
   <p class="s-mean">Are you a student?</p>
   <div class="play" id="play1"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.6" fill="none" stroke="#310A3E" stroke-width="1.6"/><path d="M8.2 6.6v6.8l5.2-3.4z" fill="#310A3E"/></svg></div>
-  <p class="hint">Tap a word to see it on its own.</p>
+  <p class="hint">Tap an underlined word to see it on its own.</p>
 </div>
 <div class="sheet" id="sheet-w"><span class="handle"></span>
   <span class="s-btn s-back" id="w-back"><svg width="14" height="14" viewBox="0 0 10 10"><path d="M6.5 1.5L3 5l3.5 3.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -199,7 +202,6 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
   <p class="s-mean">student</p>
   <div class="play" id="play2"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.6" fill="none" stroke="#310A3E" stroke-width="1.6"/><path d="M8.2 6.6v6.8l5.2-3.4z" fill="#310A3E"/></svg></div>
 </div>
-<div class="toast" id="toast"><svg width="18" height="18" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#9bd8a8"/><path d="M8.5 14.5l3.5 3.5 7.5-8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Marked as learned</div>
 <div class="finger" id="finger"></div>
 <div class="fade" id="fade"></div>
 </div></div>
@@ -224,7 +226,7 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
                                  setTimeout(() => { t.innerHTML = STORIES[i]; t.classList.remove("swap"); }, 180); $("story-prompt").textContent = prompt; };
   const tap = (id, cls = "tap") => { press(); $(id).classList.add(cls); };
   const reset = () => {
-    ["scrim", "sheet-ph", "sheet-w", "toast", "finger", "learn"].forEach(id => on(id, false));
+    ["scrim", "sheet-ph", "sheet-w", "finger", "learn"].forEach(id => on(id, false)); $("learn-label").textContent = "Mark as learned";
     $("story").classList.remove("kept"); $("story-text").innerHTML = STORIES[0]; $("story-prompt").textContent = "Does this help you remember?";
     ["ph2", "w-gakusei", "v-gakusei", "vocab-h"].forEach(id => $(id).classList.remove("tap"));
     $("vocab").classList.remove("open"); $("vocab-h").classList.remove("open-chev"); $("ph-word").classList.remove("colours");
@@ -254,14 +256,13 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
     [9500, () => sound("play1")],
     [10850, () => { on("sheet-ph", false); on("scrim", false); }],
     [11200, () => { $("ph2").classList.remove("tap"); move("learn"); }],
-    [11800, () => { press(); on("learn"); on("toast"); }],
-    [12100, () => on("finger", false)],
-    [13550, () => on("toast", false)],
+    [11800, () => { press(); on("learn"); $("learn-label").textContent = "Learned"; }],   // the pill itself confirms it
+    [12300, () => on("finger", false)],
     [14500, () => on("fade")],
   ];
   let timers = [];
   const run = () => { timers.forEach(clearTimeout); reset(); timers = T.map(([t, f]) => setTimeout(f, t)); timers.push(setTimeout(run, 15000)); };
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { on("fade", false); $("vocab").classList.add("open"); $("vocab-h").classList.add("open-chev"); on("learn"); }
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { on("fade", false); $("vocab").classList.add("open"); $("vocab-h").classList.add("open-chev"); on("learn"); $("learn-label").textContent = "Learned"; }
   else run();
 })();
 </script>
