@@ -152,6 +152,46 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 .finger.on { opacity:1; } .finger.press { transform:scale(.8); background:rgba(49,10,62,.32); }
 .fade { position:absolute; inset:0; border-radius:48px; background:var(--bg); opacity:0; transition:opacity .35s; pointer-events:none; z-index:6; }
 .fade.on { opacity:1; }
+
+/* ===== Manabi premium layer (Nov 2026): gradients, glass bar, soft-3D type tiles, Learned bar, score ring ===== */
+:root { --btn-grad:linear-gradient(180deg,#552469,#2a0836); --btn-glow:0 6px 14px -4px rgba(49,10,62,.3), inset 0 1px 0 rgba(255,255,255,.25);
+        --info-grad:linear-gradient(180deg,#ffffff,#efe8fb); --info-line:#e3dbf6;
+        --ai-box:linear-gradient(180deg,#f7efff,#ecdcff); --ai-pill:linear-gradient(180deg,#b07cf5,#7a26d6);
+        --tile-on:linear-gradient(180deg,#b394f5,#5b2bb5); --tile-on-glow:0 6px 12px -2px rgba(91,43,181,.45);
+        --tile-off:linear-gradient(180deg,#e3daf7,#bfb0e6); --tile-off-glow:0 4px 10px -3px rgba(91,43,181,.25);
+        --mint-grad:linear-gradient(90deg,#b8e8c2,#5fba7a); }
+.act-primary, .q-btn:not(.secondary) { background:var(--btn-grad); box-shadow:var(--btn-glow); }
+.deck-bar { background:rgba(255,255,255,.36); -webkit-backdrop-filter:blur(14px) saturate(1.8); backdrop-filter:blur(14px) saturate(1.8);
+            border-top:0; box-shadow:0 -10px 30px rgba(26,20,77,.14), inset 0 1px 0 rgba(255,255,255,.95); }
+.tile.read { background:var(--card); }
+.tile.learned { border-color:var(--learn-on); box-shadow:inset 0 0 0 1px var(--learn-on), 0 4px 10px -4px rgba(95,186,122,.35); }
+.q-card { box-shadow:0 1px 2px rgba(49,10,62,.05), 0 12px 32px -8px rgba(49,10,62,.16); }
+/* Learned bar card */
+.lbar { padding:12px 14px; border-radius:16px; background:var(--card); border:1px solid var(--line); box-shadow:var(--soft-shadow); gap:8px; }
+.lbar .legend { align-items:baseline; font-size:14px; color:var(--ink); }
+.pl-num { font-size:13px; font-weight:500; color:var(--muted); } .pl-num b { margin-right:2px; font-size:20px; color:var(--brand); }
+.pct-pill { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; font-size:12px; font-weight:700; vertical-align:2px;
+            background:#e8f6ec; color:#1d5631; box-shadow:inset 0 0 0 1.5px var(--learn-on); }
+.lbar .track { position:relative; height:10px; overflow:visible; background:#efeaf9; }
+.lbar .track::after { content:""; position:absolute; inset:0; background:var(--notches); }
+.lbar .track i { background:var(--mint-grad); box-shadow:0 2px 6px rgba(95,186,122,.45); }
+.lhint { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+.lhint::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--learn-on); }
+/* quiz types: soft-3D icon tile, violet when picked */
+.to-icon { flex:none; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:11px; color:#fff;
+           background:var(--tile-off); box-shadow:var(--tile-off-glow), inset 0 2px 2px rgba(255,255,255,.6); opacity:.9; }
+.to-icon svg { width:20px; height:20px; }
+.type.on .to-icon { background:var(--tile-on); box-shadow:var(--tile-on-glow), inset 0 2px 2px rgba(255,255,255,.55), inset 0 -3px 4px rgba(0,0,0,.12); opacity:1; }
+.q-banner, .r-learn { background:var(--info-grad); box-shadow:inset 0 0 0 1px var(--info-line), 0 4px 12px -4px rgba(91,43,181,.08); }
+.why { background:var(--ai-box); box-shadow:inset 0 0 0 1px #e6d4fb, 0 6px 16px -8px rgba(122,38,214,.35); }
+.ai-tag { background:var(--ai-pill); box-shadow:0 3px 8px -2px rgba(122,38,214,.55), inset 0 1px 0 rgba(255,255,255,.3); }
+/* score ring */
+.r-ring { width:110px; height:110px; }
+.r-ring .rt { stroke:var(--line); }
+.r-ring .arc { stroke-dashoffset:314.16; transition:stroke-dashoffset .9s .15s ease-out; filter:drop-shadow(0 3px 5px rgba(95,186,122,.4)); }
+.on .r-ring .arc { stroke-dashoffset:104.7; }
+.r-ring .rc { stroke-dasharray:44; stroke-dashoffset:44; transition:stroke-dashoffset .35s .9s ease-out; }
+.on .r-ring .rc { stroke-dashoffset:0; }
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
@@ -165,7 +205,7 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
     <div class="switch"><span><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 3.5h10M2 7h10M2 10.5h10" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round"/></svg></span>
       <span class="on"><svg width="14" height="14" viewBox="0 0 14 14"><g fill="#fff"><rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1"/><rect x="8" y="1.5" width="4.5" height="4.5" rx="1"/><rect x="1.5" y="8" width="4.5" height="4.5" rx="1"/><rect x="8" y="8" width="4.5" height="4.5" rx="1"/></g></svg></span></div></div>
   <div class="bars">
-    <div class="bar"><div class="legend"><span>Learned&nbsp;&nbsp;10 of 79</span><span>13%</span></div><div class="track learned"><i style="width:13%"></i></div></div>
+    <div class="bar lbar"><div class="legend"><span>Learned</span><span class="pl-num"><b>10</b> of 79<span class="pct-pill">13%</span></span></div><div class="track learned" style="--notches:linear-gradient(to right, transparent calc(12.658% - 1px), var(--card) calc(12.658% - 1px) calc(12.658% + 1px), transparent calc(12.658% + 1px), transparent calc(25.316% - 1px), var(--card) calc(25.316% - 1px) calc(25.316% + 1px), transparent calc(25.316% + 1px), transparent calc(37.975% - 1px), var(--card) calc(37.975% - 1px) calc(37.975% + 1px), transparent calc(37.975% + 1px), transparent calc(50.633% - 1px), var(--card) calc(50.633% - 1px) calc(50.633% + 1px), transparent calc(50.633% + 1px), transparent calc(63.291% - 1px), var(--card) calc(63.291% - 1px) calc(63.291% + 1px), transparent calc(63.291% + 1px), transparent calc(75.949% - 1px), var(--card) calc(75.949% - 1px) calc(75.949% + 1px), transparent calc(75.949% + 1px), transparent calc(88.608% - 1px), var(--card) calc(88.608% - 1px) calc(88.608% + 1px), transparent calc(88.608% + 1px))"><i style="width:13%"></i></div><span class="lhint">10 more to your next milestone (20)</span></div>
   </div>
   <div class="grid" id="deck-grid"></div>
   <div class="deck-bar"><span class="act act-primary">Continue · 本</span><span class="act" id="quiz-btn">Quiz</span></div>
@@ -181,9 +221,9 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
       <div class="choose tap-bg" id="choose"><span class="cr"><b id="cr-title">Pick</b><span id="cr-desc">Select specific kanji from the deck</span></span><span class="edit">Edit</span>
         <svg width="10" height="10" viewBox="0 0 10 10"><path d="M3.5 1.5L7 5 3.5 8.5" fill="none" stroke="#310A3E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
     <div><p class="label">Quiz type</p>
-      <div class="type on" id="t-meaning"><span class="radio"></span><span><b>Meaning</b><span>See a kanji, pick its meaning</span></span></div>
-      <div class="type" id="t-reading"><span class="radio"></span><span><b>Reading</b><span>See a word, pick its reading</span></span></div>
-      <div class="type"><span class="radio"></span><span><b>Matching</b><span>Match words with readings, then meanings</span></span></div></div>
+      <div class="type on" id="t-meaning"><span class="radio"></span><span class="to-icon"><svg viewBox="0 0 24 24"><path d="M12 3.5a6 6 0 0 0-3.5 10.9V17h7v-2.6A6 6 0 0 0 12 3.5zM9.5 20.5h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span><b>Meaning</b><span>See a kanji, pick its meaning</span></span></div>
+      <div class="type" id="t-reading"><span class="radio"></span><span class="to-icon"><svg viewBox="0 0 24 24"><path d="M5 9.5h3l4-3.5v12l-4-3.5H5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span><b>Reading</b><span>See a word, pick its reading</span></span></div>
+      <div class="type"><span class="radio"></span><span class="to-icon"><svg viewBox="0 0 24 24"><path d="M3.5 7a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2zM13.5 14a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2zM10.5 8.5h2a2.5 2.5 0 0 1 2.5 2.5v1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span><span><b>Matching</b><span>Match words with readings, then meanings</span></span></div></div>
     <div><p class="label">Length</p>
       <div class="chips"><span class="chip" id="len-sel" style="display:none">Selected kanji · 3</span><span class="chip on" id="len-10">10</span><span class="chip">20</span></div></div>
   </div>
@@ -216,7 +256,7 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 <section class="view" id="v-res">
   <div class="head"><h1>Quiz results</h1><span class="btn-round"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="#310A3E" stroke-width="2"/></svg></span></div>
   <div class="q-card r-card">
-    <div class="r-score"><span class="r-num">2 / 3</span><span class="r-cap">right on the first try</span><span class="r-second">1 right on the second try</span></div>
+    <div class="r-score"><svg class="r-ring" viewBox="0 0 110 110"><defs><linearGradient id="r-mint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8e8c2"/><stop offset="1" stop-color="#5fba7a"/></linearGradient></defs><circle class="rt" cx="55" cy="55" r="50" fill="none" stroke-width="10"/><circle class="arc" cx="55" cy="55" r="50" fill="none" stroke="url(#r-mint)" stroke-width="10" stroke-linecap="round" transform="rotate(-90 55 55)" stroke-dasharray="314.16"/><path class="rc" d="M42 56l9 9 18-20" fill="none" stroke="#5fba7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="r-num">2 / 3</span><span class="r-cap">right on the first try</span><span class="r-second">1 right on the second try</span></div>
     <div><p class="label">Missed the first time</p>
       <div class="row"><span class="rk rk-word" lang="ja">出口</span><span class="rm"><span lang="ja">でぐち</span> · exit</span><span class="note static">Right on 2nd try</span></div></div>
     <div class="r-learn"><h2>Mark as learned?</h2><p>You got 2 kanji right on the first try that aren’t marked as learned yet.</p>
@@ -241,7 +281,7 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
                  ["月","month"],["後","behind"],["前","in front"],["生","life"]];
   const READ = 9, LEARNED = new Set(["日","一","国","人","年","大","十","二","本"]);
   const CHK = '<svg class="chk" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="FILL"/><path d="M8.5 14.5l3.5 3.5 7.5-8" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  $("deck-grid").innerHTML = KANJI.map(([k, m], i) => `<div class="tile${i < READ ? " read" : ""}"><b lang="ja">${k}</b><small>${m}</small>${LEARNED.has(k) ? CHK.replace("FILL", "#9bd8a8") : ""}</div>`).join("");
+  $("deck-grid").innerHTML = KANJI.map(([k, m], i) => `<div class="tile${i < READ ? " read" : ""}${LEARNED.has(k) ? " learned" : ""}"><b lang="ja">${k}</b><small>${m}</small>${LEARNED.has(k) ? CHK.replace("FILL", "#9bd8a8") : ""}</div>`).join("");
   $("pick-grid").innerHTML = KANJI.map(([k, m]) => `<div class="pick" id="p-${k}"><b lang="ja">${k}</b><small>${m}</small>${CHK.replace("FILL", "#310a3e")}</div>`).join("");
 
   const OK = '<svg class="ok" width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#3f9a5b"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';

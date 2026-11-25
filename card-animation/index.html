@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kanji card animation</title>
-<!-- A 15-second loop of the kanji card, in the app's own design tokens:
-     memory story → vocabulary → word sheet → phrase sheet (grammar tints) → Learned pill in the bottom bar. -->
+<!-- A 19-second loop of the kanji card, in the app's own design tokens:
+     stroke order → memory story → vocabulary → word sheet → phrase sheet (grammar tints) → Learned pill in the bottom bar. -->
 <style>
 :root { --bg:#f9f7fd; --card:#fff; --ink:#1d1b18; --muted:#6b665e; --line:#eae6f7; --brand:#310a3e; --brand-soft:#eae6f7;
         --tag:#eee9f0; --tag-ink:#6b665e; --light-gray:#f7f7f7; --learn-on:#9bd8a8; --learn-ink:#1d5631; --read-tint:#f5f3fc;
-        --hover-line:#bba6ee; --hover-strong:#8f72dc; --verb-tint:#ddf3e7; --particle-tint:#fde8cc; --pick:#310a3e;
+        --hover-line:#bba6ee; --hover-strong:#8f72dc; --verb-tint:#c3ebd2; --particle-tint:#fcd9a8; --pick:#310a3e;
         --shadow:0 4px 24px rgba(26,20,77,.12); --soft-shadow:0 1px 2px rgba(49,10,62,.06), 0 2px 8px rgba(49,10,62,.06); }
 * { box-sizing:border-box; }
 html, body { height:100%; margin:0; }
@@ -143,6 +143,58 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
 
 .fade { position:absolute; inset:0; border-radius:48px; background:var(--bg); opacity:0; transition:opacity .35s; pointer-events:none; z-index:6; }
 .fade.on { opacity:1; }
+
+/* ===== Manabi premium layer (Nov 2026): practice square, lifted card, gradients, glass footer, motion ===== */
+:root { --btn-grad:linear-gradient(180deg,#552469,#2a0836); --btn-glow:0 6px 14px -4px rgba(49,10,62,.3), inset 0 1px 0 rgba(255,255,255,.25);
+        --ai-box:linear-gradient(180deg,#f7efff,#ecdcff); --ai-pill:linear-gradient(180deg,#b07cf5,#7a26d6); --guide:#d9cff5;
+        --stack-1:#f3eefc; --stack-2:#e6def7; --stack-line:#ddd3f3; }
+.card { box-shadow:0 1px 2px rgba(49,10,62,.05), 0 12px 32px -8px rgba(49,10,62,.18); }
+.card::before, .card::after { content:""; position:absolute; z-index:-1; bottom:-11px; height:28px; left:13px; right:13px;
+  border-radius:0 0 20px 20px; background:var(--stack-1); border:1px solid var(--stack-line); border-top:0; box-shadow:0 6px 14px rgba(26,20,77,.07); }
+.card::after { z-index:-2; bottom:-22px; left:26px; right:26px; background:var(--stack-2); }
+.screen { isolation:isolate; }
+.kanji { position:relative; flex:none; width:104px; height:104px; display:flex; align-items:center; justify-content:center; font-size:74px; border-radius:16px;
+  box-shadow:inset 0 0 0 2px var(--hover-line);
+  background:repeating-linear-gradient(to bottom, var(--guide) 0 4px, transparent 4px 9px) center / 1.2px 100% no-repeat,
+             repeating-linear-gradient(to right, var(--guide) 0 4px, transparent 4px 9px) center / 100% 1.2px no-repeat, var(--card); }
+.kplay { position:absolute; right:4px; bottom:4px; width:26px; height:26px; border-radius:50%; background:var(--card); color:var(--brand);
+  display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 1px var(--line), var(--soft-shadow); transition:transform .15s; }
+.kplay.tap { transform:scale(.85); background:var(--brand-soft); }
+.story { background:var(--ai-box); box-shadow:inset 0 0 0 1px #e6d4fb, 0 6px 16px -8px rgba(122,38,214,.35); }
+.ai-tag { background:var(--ai-pill); box-shadow:0 3px 8px -2px rgba(122,38,214,.55), inset 0 1px 0 rgba(255,255,255,.3); }
+.story.kept #story-keep { background:var(--ai-pill); }
+.sec-h, .ph-h { background:linear-gradient(180deg,#faf8fe,#f1ecfb); }
+.ph { box-shadow:inset 0 0 0 1.5px transparent; transition:box-shadow .2s; } .ph.tap { background:none; box-shadow:inset 0 0 0 1.5px var(--hover-line); }
+.nav { background:rgba(255,255,255,.36); -webkit-backdrop-filter:blur(14px) saturate(1.8); backdrop-filter:blur(14px) saturate(1.8);
+       border-top:0; box-shadow:0 -10px 30px rgba(26,20,77,.14), inset 0 1px 0 rgba(255,255,255,.95); }
+.screen { padding-bottom:120px; }
+.learn.on { background:var(--btn-grad); box-shadow:var(--btn-glow); animation:pill-bounce .45s cubic-bezier(.3,1.5,.5,1), ink-drop .8s ease-out; }
+.learn .tick { stroke-dasharray:11; stroke-dashoffset:0; }
+.learn.on .tick { animation:tick-draw .38s .16s ease-out both; }
+.learn.on .bg { animation:bg-pop .4s cubic-bezier(.3,1.6,.5,1) both; transform-box:fill-box; transform-origin:center; }
+.learn.on svg { animation:icon-pop .45s cubic-bezier(.3,1.6,.5,1); }
+@keyframes tick-draw { from { stroke-dashoffset:11; } }
+@keyframes bg-pop { from { transform:scale(0); } }
+@keyframes icon-pop { 45% { transform:scale(1.45); } }
+@keyframes pill-bounce { 0% { transform:scale(.94); } 55% { transform:scale(1.05); } 100% { transform:scale(1); } }
+@keyframes ink-drop { 0% { box-shadow:var(--btn-glow), 0 0 0 0 rgba(155,216,168,.75); } 100% { box-shadow:var(--btn-glow), 0 0 0 26px rgba(155,216,168,0); } }
+.sheet { transition:transform .42s cubic-bezier(.2,1.18,.35,1); box-shadow:0 -12px 40px rgba(26,20,77,.18); }
+.play { background:var(--card); }
+/* stroke-order slide-up */
+.st-head { display:flex; flex-direction:column; align-items:center; gap:2px; margin:22px 0 12px; }
+.st-head b { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--brand); }
+.st-head span { font-size:14px; color:var(--muted); }
+.st-square { width:220px; height:220px; margin:0 auto; border-radius:16px; box-shadow:inset 0 0 0 2px var(--hover-line);
+  background:repeating-linear-gradient(to bottom, var(--guide) 0 4px, transparent 4px 9px) center / 1.2px 100% no-repeat,
+             repeating-linear-gradient(to right, var(--guide) 0 4px, transparent 4px 9px) center / 100% 1.2px no-repeat, var(--card); }
+.st-square svg { width:100%; height:100%; display:block; }
+.st-square path { fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-width:4.2; }
+.st-square .ghost path { stroke:var(--brand); opacity:.1; } .st-square .drawn path { stroke:var(--ink); }
+.st-square .tip { fill:#e4572e; filter:drop-shadow(0 0 3px rgba(228,87,46,.6)); }
+.st-count { display:flex; align-items:center; justify-content:center; gap:10px; margin:14px 0 4px; font-size:13px; color:var(--muted); }
+.dots { display:inline-flex; align-items:center; gap:5px; }
+.dots i { width:7px; height:7px; border-radius:50%; background:var(--line); }
+.dots i.done { background:var(--brand); } .dots i.now { width:10px; height:10px; background:var(--brand); }
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
@@ -156,7 +208,7 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
   </div>
   <article class="card">
     <div class="head">
-      <div class="kanji" lang="ja">学</div>
+      <div class="kanji" lang="ja">学<span class="kplay" id="kplay"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1.8v6.4l5-3.2z" fill="currentColor"/></svg></span></div>
       <div class="info">
         <span class="lv">N5</span>
         <div class="meaning">study, learning, science</div>
@@ -202,6 +254,12 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
   <p class="s-mean">student</p>
   <div class="play" id="play2"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.6" fill="none" stroke="#310A3E" stroke-width="1.6"/><path d="M8.2 6.6v6.8l5.2-3.4z" fill="#310A3E"/></svg></div>
 </div>
+<div class="sheet" id="sheet-st"><span class="handle"></span>
+  <span class="s-btn s-close"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="#310A3E" stroke-width="2"/></svg></span>
+  <p class="st-head"><b>Stroke order</b><span lang="ja">学 · 8 strokes</span></p>
+  <div class="st-square"><svg id="st-svg" viewBox="0 0 109 109"><g class="ghost"></g><g class="drawn"></g><circle class="tip" r="3.2" cx="-10" cy="-10"/></svg></div>
+  <p class="st-count"><span class="dots" id="st-dots"></span><span id="st-label">Stroke 1 of 8</span></p>
+</div>
 <div class="finger" id="finger"></div>
 <div class="fade" id="fade"></div>
 </div></div>
@@ -220,48 +278,72 @@ body { display:flex; align-items:center; justify-content:center; overflow:hidden
   const press = () => { finger.classList.add("press"); setTimeout(() => finger.classList.remove("press"), 160); };
   const sound = id => { $(id).classList.remove("sound"); void $(id).offsetWidth; $(id).classList.add("sound"); };
 
+
+  // Stroke order (KanjiVG, CC BY-SA 3.0): each stroke draws in turn, a vermilion tip leading it
+  const SD = ["M29.5,17.25c3.5,3,6.5,7.25,7.75,9.75", "M49,12c1.25,2,4.75,8.25,5.25,11.5", "M75,11c0.25,1.75-0.12,2.75-0.75,4.25c-1.29,3.1-4.25,7.38-6.5,9.75", "M21.25,33.75c-0.12,4.75-2,12.5-3.75,16.25", "M23.5,36.5c17-1.62,42.38-5.5,60-5.75c9.5-0.13,4.12,5.12,0,9", "M37.25,46.5c1,0.25,3.75,0.25,5.5-0.25s18.25-4,20-4s2.75,0.75,1,2.25S54.5,53.5,53,54.75", "M50.75,55.75c4,8.75,7.18,24.67,1.75,38c-2.75,6.75-7.75,1.25-9.75-2", "M15.75,67.75c1.75,1,4.64,1.36,7.5,1c15.88-2,44.43-6.25,61.37-5.5c2.5,0.11,4.72,0.25,6.39,1"];
+  const NS = "http://www.w3.org/2000/svg", ssvg = $("st-svg"), mk = d => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); return p; };
+  SD.forEach(d => ssvg.querySelector(".ghost").appendChild(mk(d)));
+  const SP = SD.map(d => ssvg.querySelector(".drawn").appendChild(mk(d))), SL = SP.map(p => p.getTotalLength()), tip = ssvg.querySelector(".tip");
+  $("st-dots").innerHTML = SD.map(() => "<i></i>").join("");
+  let sraf = 0;
+  const sset = (k, f) => { SP[k].style.strokeDasharray = SL[k]; SP[k].style.strokeDashoffset = SL[k] * (1 - f);
+                           const pt = SP[k].getPointAtLength(SL[k] * f); tip.setAttribute("cx", pt.x); tip.setAttribute("cy", pt.y); };
+  const sui = i => { $("st-label").textContent = `Stroke ${Math.min(i + 1, SD.length)} of ${SD.length}`;
+                     [...$("st-dots").children].forEach((el, k) => el.className = k < i ? "done" : k === i ? "now" : ""); };
+  const sreset = () => { cancelAnimationFrame(sraf); SP.forEach((p, k) => sset(k, 0)); tip.setAttribute("cx", -10); sui(0); };
+  const sdraw = () => { let i = 0, t0 = performance.now(); sui(0);
+    const dur = k => Math.max(150, SL[k] * 3.5);
+    const fr = now => { const f = Math.min(1, (now - t0) / dur(i)); sset(i, Math.max(0, f));
+      if (f < 1) { sraf = requestAnimationFrame(fr); return; }
+      if (i < SD.length - 1) { i++; sui(i); t0 = now + 80; sraf = requestAnimationFrame(fr); } else { sui(SD.length); tip.setAttribute("cx", -10); } };
+    sraf = requestAnimationFrame(fr); };
   const STORIES = ["A child 子 under a roof 冖, with sparks ⺍ of ideas above its head: <b>studying</b>.",
                    "Three little lights ⺍ over a roof 冖, and a child 子 underneath, reading late: <b>studying</b>."];
   const story = (i, prompt) => { const t = $("story-text"); t.classList.add("swap");
                                  setTimeout(() => { t.innerHTML = STORIES[i]; t.classList.remove("swap"); }, 180); $("story-prompt").textContent = prompt; };
   const tap = (id, cls = "tap") => { press(); $(id).classList.add(cls); };
   const reset = () => {
-    ["scrim", "sheet-ph", "sheet-w", "finger", "learn"].forEach(id => on(id, false)); $("learn-label").textContent = "Mark as learned";
+    ["scrim", "sheet-ph", "sheet-w", "sheet-st", "finger", "learn"].forEach(id => on(id, false)); sreset(); $("kplay").classList.remove("tap"); $("learn-label").textContent = "Mark as learned";
     $("story").classList.remove("kept"); $("story-text").innerHTML = STORIES[0]; $("story-prompt").textContent = "Does this help you remember?";
     ["ph2", "w-gakusei", "v-gakusei", "vocab-h"].forEach(id => $(id).classList.remove("tap"));
     $("vocab").classList.remove("open"); $("vocab-h").classList.remove("open-chev"); $("ph-word").classList.remove("colours");
     finger.style.left = "300px"; finger.style.top = "700px";
   };
-  // [ms, step]: one 10-second loop
+  // [ms, step]: one 19-second loop
   const T = [
     [200,  () => on("fade", false)],
-    [600,  () => { on("finger"); move("story-next"); }],
-    [1100,  () => { tap("story-next"); story(1, "Story 2 of 3 · keep this one?"); }],   // AI memory story: another one
-    [1350, () => $("story-next").classList.remove("tap")],
-    [1850, () => move("story-keep")],
-    [2300, () => { tap("story-keep"); $("story").classList.add("kept"); $("story-prompt").textContent = "You kept this story"; }],
-    [2550, () => $("story-keep").classList.remove("tap")],
-    [3000,  () => { on("finger"); move("vocab-h"); }],
-    [3550,  () => { tap("vocab-h"); $("vocab").classList.add("open"); $("vocab-h").classList.add("open-chev"); }],
-    [3850, () => $("vocab-h").classList.remove("tap")],
-    [4650, () => move("v-gakusei")],
-    [5150, () => { tap("v-gakusei"); $("w-back").hidden = true; }],  // a word
-    [5400, () => { on("scrim"); on("sheet-w"); }],
-    [5850, () => sound("play2")],
-    [6900, () => { on("sheet-w", false); on("scrim", false); $("v-gakusei").classList.remove("tap"); }],
-    [7300, () => move("ph2")],
-    [7800, () => tap("ph2")],                                         // a phrase
-    [8050, () => { on("scrim"); on("sheet-ph"); }],
-    [8550, () => $("ph-word").classList.add("colours")],             // particles and verbs pop
-    [9500, () => sound("play1")],
-    [10850, () => { on("sheet-ph", false); on("scrim", false); }],
-    [11200, () => { $("ph2").classList.remove("tap"); move("learn"); }],
-    [11800, () => { press(); on("learn"); $("learn-label").textContent = "Learned"; }],   // the pill itself confirms it
-    [12300, () => on("finger", false)],
-    [14500, () => on("fade")],
+    [600,  () => { on("finger"); move("kplay"); }],
+    [1100, () => { tap("kplay"); }],                                    // ▶ stroke order
+    [1300, () => { $("kplay").classList.remove("tap"); on("scrim"); on("sheet-st"); }],
+    [1700, () => sdraw()],
+    [4350, () => { on("sheet-st", false); on("scrim", false); }],
+    [4600,  () => move("story-next")],
+    [5100,  () => { tap("story-next"); story(1, "Story 2 of 3 · keep this one?"); }],   // AI memory story: another one
+    [5350, () => $("story-next").classList.remove("tap")],
+    [5850, () => move("story-keep")],
+    [6300, () => { tap("story-keep"); $("story").classList.add("kept"); $("story-prompt").textContent = "You kept this story"; }],
+    [6550, () => $("story-keep").classList.remove("tap")],
+    [7000,  () => { on("finger"); move("vocab-h"); }],
+    [7550,  () => { tap("vocab-h"); $("vocab").classList.add("open"); $("vocab-h").classList.add("open-chev"); }],
+    [7850, () => $("vocab-h").classList.remove("tap")],
+    [8650, () => move("v-gakusei")],
+    [9150, () => { tap("v-gakusei"); $("w-back").hidden = true; }],  // a word
+    [9400, () => { on("scrim"); on("sheet-w"); }],
+    [9850, () => sound("play2")],
+    [10900, () => { on("sheet-w", false); on("scrim", false); $("v-gakusei").classList.remove("tap"); }],
+    [11300, () => move("ph2")],
+    [11800, () => tap("ph2")],                                         // a phrase
+    [12050, () => { on("scrim"); on("sheet-ph"); }],
+    [12550, () => $("ph-word").classList.add("colours")],             // particles and verbs pop
+    [13500, () => sound("play1")],
+    [14850, () => { on("sheet-ph", false); on("scrim", false); }],
+    [15200, () => { $("ph2").classList.remove("tap"); move("learn"); }],
+    [15800, () => { press(); on("learn"); $("learn-label").textContent = "Learned"; }],   // the pill itself confirms it
+    [16300, () => on("finger", false)],
+    [18500, () => on("fade")],
   ];
   let timers = [];
-  const run = () => { timers.forEach(clearTimeout); reset(); timers = T.map(([t, f]) => setTimeout(f, t)); timers.push(setTimeout(run, 15000)); };
+  const run = () => { timers.forEach(clearTimeout); reset(); timers = T.map(([t, f]) => setTimeout(f, t)); timers.push(setTimeout(run, 19000)); };
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { on("fade", false); $("vocab").classList.add("open"); $("vocab-h").classList.add("open-chev"); on("learn"); $("learn-label").textContent = "Learned"; }
   else run();
 })();
